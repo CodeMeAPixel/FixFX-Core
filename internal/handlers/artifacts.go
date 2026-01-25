@@ -62,12 +62,49 @@ func GetArtifacts(c *fiber.Ctx) error {
 		})
 	}
 
+	// Calculate total (assuming all artifacts match without offset)
+	total := len(artifacts) + offset
+	if len(artifacts) < limit {
+		total = offset + len(artifacts)
+	}
+
+	// Get unique platforms and support statuses for metadata
+	platformsMap := make(map[string]bool)
+	statusesMap := make(map[string]bool)
+	for _, artifact := range artifacts {
+		platformsMap[string(artifact.Platform)] = true
+		statusesMap[string(artifact.SupportStatus)] = true
+	}
+
+	platforms := make([]string, 0)
+	statuses := make([]string, 0)
+	for p := range platformsMap {
+		platforms = append(platforms, p)
+	}
+	for s := range statusesMap {
+		statuses = append(statuses, s)
+	}
+
 	return c.JSON(fiber.Map{
-		"success": true,
-		"count":   len(artifacts),
-		"data":    artifacts,
-		"limit":   limit,
-		"offset":  offset,
+		"data": artifacts,
+		"metadata": fiber.Map{
+			"total":           total,
+			"limit":           limit,
+			"offset":          offset,
+			"hasMore":         len(artifacts) == limit,
+			"platforms":       platforms,
+			"supportStatuses": statuses,
+			"query": fiber.Map{
+				"platform":   query.Platform,
+				"version":    query.Version,
+				"status":     string(query.Status),
+				"limit":      limit,
+				"offset":     offset,
+				"sortBy":     query.SortBy,
+				"sortOrder":  query.SortOrder,
+				"includeEol": query.IncludeEOL,
+			},
+		},
 	})
 }
 
