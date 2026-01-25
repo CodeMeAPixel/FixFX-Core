@@ -61,6 +61,7 @@ func main() {
 	handlers.InitArtifactsHandler(githubToken)
 	handlers.InitNativesHandler()
 	handlers.InitSourceHandler(".", nil) // Use current directory as base path
+	handlers.InitContributorsHandler(githubToken)
 
 	// Health check
 	app.Get("/health", healthCheck)
@@ -83,6 +84,7 @@ func main() {
 	routes.RegisterNativesRoutes(api)
 	routes.RegisterSourceRoutes(api)
 	routes.RegisterSearchRoutes(api)
+	routes.RegisterContributorsRoutes(api)
 
 	// Start server
 	port := os.Getenv("PORT")
