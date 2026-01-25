@@ -1,0 +1,378 @@
+basePath: /api
+host: localhost:3001
+info:
+  contact:
+    name: Support
+    url: https://fixfx.wiki/discord
+  description: Backend API for FixFX documentation and tools
+  title: FixFX API
+  version: 1.0.0
+paths:
+  /artifacts/changes:
+    get:
+      description: Get changelog/commits between two artifact versions
+      parameters:
+      - description: Base version for comparison
+        in: query
+        name: base
+        type: string
+      - description: Head version for comparison
+        in: query
+        name: head
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get artifact changelog
+      tags:
+      - Artifacts
+  /artifacts/check:
+    get:
+      description: Check the status and availability of an artifact
+      parameters:
+      - description: Version to check
+        in: query
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Check artifact status
+      tags:
+      - Artifacts
+  /artifacts/fetch:
+    get:
+      description: Fetch FiveM/RedM server artifacts with filtering and pagination
+      parameters:
+      - default: all
+        description: Platform (windows/linux/all)
+        in: query
+        name: platform
+        type: string
+      - description: Specific version to fetch
+        in: query
+        name: version
+        type: string
+      - description: Filter by status (recommended/latest/active/deprecated/eol)
+        in: query
+        name: status
+        type: string
+      - default: version
+        description: Sort by (version/date)
+        in: query
+        name: sortBy
+        type: string
+      - default: desc
+        description: Sort order (asc/desc)
+        in: query
+        name: sortOrder
+        type: string
+      - default: 50
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      - default: true
+        description: Include end-of-life artifacts
+        in: query
+        name: includeEol
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get artifacts
+      tags:
+      - Artifacts
+  /artifacts/version/{version}:
+    get:
+      description: Fetch a specific artifact version
+      parameters:
+      - description: Artifact version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Platform filter
+        in: query
+        name: platform
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get artifact by version
+      tags:
+      - Artifacts
+  /health:
+    get:
+      description: Check if the API is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health Check
+      tags:
+      - Health
+  /natives:
+    get:
+      description: Fetch game natives with filtering and search
+      parameters:
+      - default: gta5
+        description: Game (gta5/rdr3)
+        in: query
+        name: game
+        type: string
+      - default: all
+        description: Environment (client/server/shared/all)
+        in: query
+        name: environment
+        type: string
+      - description: Namespace filter
+        in: query
+        name: namespace
+        type: string
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - default: 50
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      - default: true
+        description: Include CFX natives
+        in: query
+        name: includeCfx
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get game natives
+      tags:
+      - Natives
+  /natives/{hash}:
+    get:
+      description: Fetch a specific native by its hash
+      parameters:
+      - description: Native hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      - default: gta5
+        description: Game (gta5/rdr3)
+        in: query
+        name: game
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get native by hash
+      tags:
+      - Natives
+  /natives/search:
+    get:
+      description: Search across all native functions
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: gta5
+        description: Game (gta5/rdr3)
+        in: query
+        name: game
+        type: string
+      - description: Environment filter
+        in: query
+        name: environment
+        type: string
+      - default: 50
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search natives
+      tags:
+      - Natives
+  /natives/stats:
+    get:
+      description: Get statistics about available natives
+      parameters:
+      - default: gta5
+        description: Game (gta5/rdr3)
+        in: query
+        name: game
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get natives statistics
+      tags:
+      - Natives
+  /source:
+    get:
+      description: Securely read and return source file contents with syntax highlighting
+      parameters:
+      - description: File path (relative to project root)
+        in: query
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Path not provided or invalid
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Path not allowed (not in whitelist)
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: File not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Read source file
+      tags:
+      - Source
+schemes:
+- http
+- https
+swagger: "2.0"

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -12,8 +13,14 @@ import (
 	"github.com/CodeMeAPixel/FixFX-Core/internal/routes"
 )
 
+// Version information
+const (
+	Version   = "0.1.0"
+	BuildTime = "2026-01-25"
+)
+
 // @title FixFX API
-// @version 1.0.0
+// @version 0.1.0
 // @description Backend API for FixFX documentation and tools
 
 // @contact.name Support
@@ -29,10 +36,19 @@ func main() {
 		log.Println("No .env file found, using environment variables")
 	}
 
+	// Log startup information
+	log.Printf("╔═══════════════════════════════════════════════════════════╗")
+	log.Printf("║          FixFX Backend API - Starting Up                  ║")
+	log.Printf("╠═══════════════════════════════════════════════════════════╣")
+	log.Printf("║ Version:     v%s                                         ║", Version)
+	log.Printf("║ Build Time:  %s                                    ║", BuildTime)
+	log.Printf("║ Environment: %s                                         ║", os.Getenv("ENVIRONMENT"))
+	log.Printf("╚═══════════════════════════════════════════════════════════╝")
+
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:      "FixFX API",
-		ServerHeader: "FixFX/1.0.0",
+		ServerHeader: "FixFX/" + Version,
 		ErrorHandler: globalErrorHandler,
 	})
 
@@ -75,22 +91,27 @@ func main() {
 	}
 
 	log.Printf("Starting FixFX API on port %s", port)
+
+	// Check for version updates in background
+	go checkVersionUpdates()
+
 	if err := app.Listen(":" + port); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // @Summary Health Check
-// @Description Check if the API is running
+// @Description Check if the API is running and get version information
 // @Tags Health
 // @Produce json
-// @Success 200 {object} map[string]string
+// @Success 200 {object} map[string]interface{}
 // @Router /health [get]
 func healthCheck(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
-		"status":  "healthy",
-		"version": "1.0.0",
-		"service": "FixFX API",
+		"status":    "healthy",
+		"version":   Version,
+		"service":   "FixFX API",
+		"timestamp": c.Get("Date"),
 	})
 }
 
@@ -431,4 +452,40 @@ var docsHTML = `
 func docsHandler(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/html; charset=utf-8")
 	return c.SendString(docsHTML)
+}
+
+// checkVersionUpdates checks GitHub releases for newer versions
+// This runs as a goroutine to not block startup
+func checkVersionUpdates() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Version check failed: %v", r)
+		}
+	}()
+
+	// Wait for Fiber to print its startup message first
+	time.Sleep(100 * time.Millisecond)
+
+	// For now, just log the current version
+	// In a future release, we can add GitHub API checking
+	log.Printf("")
+	log.Printf("✓ FixFX API v%s is running", Version)
+	log.Printf("→ Documentation available at http://localhost:3001/docs")
+	log.Printf("→ Health check at http://localhost:3001/health")
+	log.Printf("")
+
+	// TODO: Add GitHub API check for new versions
+	// Example implementation:
+	// resp, err := http.Get("https://api.github.com/repos/CodeMeAPixel/FixFX-Core/releases/latest")
+	// if err != nil {
+	// 	log.Printf("Could not check for updates: %v", err)
+	// 	return
+	// }
+	// var latestRelease struct {
+	// 	TagName string `json:"tag_name"`
+	// }
+	// json.NewDecoder(resp.Body).Decode(&latestRelease)
+	// if latestRelease.TagName > "v"+Version {
+	// 	log.Printf("⚠️  New version available: %s (current: v%s)", latestRelease.TagName, Version)
+	// }
 }

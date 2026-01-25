@@ -31,10 +31,6 @@ go.work
 .env.local
 .env.*.local
 
-# Generated files
-docs/swagger.json
-docs/swagger.yaml
-
 # Logs
 *.log
 logs/
