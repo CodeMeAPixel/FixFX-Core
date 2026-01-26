@@ -54,7 +54,7 @@ func GetArtifacts(c *fiber.Ctx) error {
 	query.Limit = limit
 	query.Offset = offset
 
-	artifacts, err := artifactsService.GetArtifacts(query)
+	result, err := artifactsService.GetArtifacts(query)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":  err.Error(),
@@ -62,11 +62,8 @@ func GetArtifacts(c *fiber.Ctx) error {
 		})
 	}
 
-	// Calculate total (assuming all artifacts match without offset)
-	total := len(artifacts) + offset
-	if len(artifacts) < limit {
-		total = offset + len(artifacts)
-	}
+	artifacts := result.Data
+	totalFiltered := result.Total
 
 	// Get unique platforms and support statuses for metadata
 	platformsMap := make(map[string]bool)
@@ -88,10 +85,10 @@ func GetArtifacts(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"data": artifacts,
 		"metadata": fiber.Map{
-			"total":           total,
+			"total":           totalFiltered,
 			"limit":           limit,
 			"offset":          offset,
-			"hasMore":         len(artifacts) == limit,
+			"hasMore":         offset+len(artifacts) < totalFiltered,
 			"platforms":       platforms,
 			"supportStatuses": statuses,
 			"query": fiber.Map{
@@ -133,14 +130,14 @@ func GetArtifactByVersion(c *fiber.Ctx) error {
 		IncludeEOL: true,
 	}
 
-	artifacts, err := artifactsService.GetArtifacts(query)
+	result, err := artifactsService.GetArtifacts(query)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	if len(artifacts) == 0 {
+	if len(result.Data) == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Artifact version not found",
 		})
@@ -148,8 +145,8 @@ func GetArtifactByVersion(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"success": true,
-		"count":   len(artifacts),
-		"data":    artifacts,
+		"count":   len(result.Data),
+		"data":    result.Data,
 	})
 }
 
@@ -176,14 +173,14 @@ func CheckArtifact(c *fiber.Ctx) error {
 		IncludeEOL: true,
 	}
 
-	artifacts, err := artifactsService.GetArtifacts(query)
+	result, err := artifactsService.GetArtifacts(query)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	if len(artifacts) == 0 {
+	if len(result.Data) == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error":   "Artifact version not found",
 			"version": version,
@@ -194,8 +191,8 @@ func CheckArtifact(c *fiber.Ctx) error {
 		"success":       true,
 		"version":       version,
 		"available":     true,
-		"platformCount": len(artifacts),
-		"platforms":     artifacts,
+		"platformCount": len(result.Data),
+		"platforms":     result.Data,
 	})
 }
 
@@ -223,15 +220,15 @@ func GetArtifactChanges(c *fiber.Ctx) error {
 	baseQuery := services.ArtifactsQuery{Version: base, IncludeEOL: true}
 	headQuery := services.ArtifactsQuery{Version: head, IncludeEOL: true}
 
-	baseArtifacts, err := artifactsService.GetArtifacts(baseQuery)
-	if err != nil || len(baseArtifacts) == 0 {
+	baseResult, err := artifactsService.GetArtifacts(baseQuery)
+	if err != nil || len(baseResult.Data) == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Base version not found",
 		})
 	}
 
-	headArtifacts, err := artifactsService.GetArtifacts(headQuery)
-	if err != nil || len(headArtifacts) == 0 {
+	headResult, err := artifactsService.GetArtifacts(headQuery)
+	if err != nil || len(headResult.Data) == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Head version not found",
 		})
@@ -243,11 +240,11 @@ func GetArtifactChanges(c *fiber.Ctx) error {
 		"base":    base,
 		"head":    head,
 		"comparison": map[string]interface{}{
-			"base_hash": baseArtifacts[0].Hash,
-			"head_hash": headArtifacts[0].Hash,
-			"base_date": baseArtifacts[0].Date,
-			"head_date": headArtifacts[0].Date,
-			"platforms": len(headArtifacts),
+			"base_hash": baseResult.Data[0].Hash,
+			"head_hash": headResult.Data[0].Hash,
+			"base_date": baseResult.Data[0].Date,
+			"head_date": headResult.Data[0].Date,
+			"platforms": len(headResult.Data),
 		},
 		"message": "Use GitHub API to fetch detailed commit history",
 	})

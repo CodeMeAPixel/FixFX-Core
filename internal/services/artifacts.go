@@ -79,12 +79,20 @@ type ArtifactsQuery struct {
 
 type ArtifactEntry struct {
 	Version       string
+	FullVersion   string // Full version string like v1.0.0.12345 for Pterodactyl
 	Hash          string
 	Platform      PlatformType
 	Date          string
 	SupportStatus SupportStatus
 	URL           string
 	Size          int64
+}
+
+// ArtifactsResult holds paginated results with metadata
+type ArtifactsResult struct {
+	Data       []ArtifactEntry
+	Total      int
+	FilteredBy string
 }
 
 // Cache structures
@@ -371,7 +379,7 @@ func (s *ArtifactsService) PaginateArtifacts(artifacts []ArtifactEntry, limit, o
 }
 
 // GetArtifacts returns the full list of artifacts with filtering and pagination
-func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) ([]ArtifactEntry, error) {
+func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult, error) {
 	tags, err := s.FetchGitHubTags(true)
 	if err != nil {
 		return nil, err
@@ -384,6 +392,7 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) ([]ArtifactEntry, 
 	for version, artifact := range processedData.Windows {
 		artifacts = append(artifacts, ArtifactEntry{
 			Version:       version,
+			FullVersion:   s.generateFullVersion(version),
 			Hash:          artifact.Hash,
 			Platform:      Windows,
 			Date:          artifact.Date,
@@ -395,6 +404,7 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) ([]ArtifactEntry, 
 	for version, artifact := range processedData.Linux {
 		artifacts = append(artifacts, ArtifactEntry{
 			Version:       version,
+			FullVersion:   s.generateFullVersion(version),
 			Hash:          artifact.Hash,
 			Platform:      Linux,
 			Date:          artifact.Date,
@@ -407,6 +417,9 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) ([]ArtifactEntry, 
 	// Apply filtering
 	filtered := s.FilterArtifacts(artifacts, query)
 
+	// Store total count after filtering but before pagination
+	totalFiltered := len(filtered)
+
 	// Apply sorting
 	sorted := s.SortArtifacts(filtered, query.SortBy, query.SortOrder)
 
@@ -416,7 +429,10 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) ([]ArtifactEntry, 
 	}
 	paginated := s.PaginateArtifacts(sorted, query.Limit, query.Offset)
 
-	return paginated, nil
+	return &ArtifactsResult{
+		Data:  paginated,
+		Total: totalFiltered,
+	}, nil
 }
 
 // Helper methods
@@ -445,6 +461,12 @@ func (s *ArtifactsService) determineSupportStatus(version int) SupportStatus {
 	default:
 		return EOL
 	}
+}
+
+// generateFullVersion creates the full version string for hosting panels like Pterodactyl
+// Format: v1.0.0.{build_number} (e.g., v1.0.0.12345)
+func (s *ArtifactsService) generateFullVersion(version string) string {
+	return fmt.Sprintf("v1.0.0.%s", version)
 }
 
 func (s *ArtifactsService) estimateSize(version string, platform string) int64 {
