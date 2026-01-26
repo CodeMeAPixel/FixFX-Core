@@ -88,10 +88,21 @@ type ArtifactEntry struct {
 	Size          int64
 }
 
+// ArtifactStats holds counts by support status
+type ArtifactStats struct {
+	Total       int `json:"total"`
+	Recommended int `json:"recommended"`
+	Latest      int `json:"latest"`
+	Active      int `json:"active"`
+	Deprecated  int `json:"deprecated"`
+	EOL         int `json:"eol"`
+}
+
 // ArtifactsResult holds paginated results with metadata
 type ArtifactsResult struct {
 	Data       []ArtifactEntry
 	Total      int
+	Stats      ArtifactStats
 	FilteredBy string
 }
 
@@ -420,6 +431,9 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult,
 	// Store total count after filtering but before pagination
 	totalFiltered := len(filtered)
 
+	// Calculate stats from filtered results (before pagination)
+	stats := s.calculateStats(filtered)
+
 	// Apply sorting
 	sorted := s.SortArtifacts(filtered, query.SortBy, query.SortOrder)
 
@@ -432,6 +446,7 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult,
 	return &ArtifactsResult{
 		Data:  paginated,
 		Total: totalFiltered,
+		Stats: stats,
 	}, nil
 }
 
@@ -467,6 +482,28 @@ func (s *ArtifactsService) determineSupportStatus(version int) SupportStatus {
 // Format: {version}-{hash} (e.g., 24769-315823736cfbc085104ca0d32779311cd2f1a5a8)
 func (s *ArtifactsService) generateFullVersion(version string, hash string) string {
 	return fmt.Sprintf("%s-%s", version, hash)
+}
+
+// calculateStats calculates artifact counts by support status
+func (s *ArtifactsService) calculateStats(artifacts []ArtifactEntry) ArtifactStats {
+	stats := ArtifactStats{
+		Total: len(artifacts),
+	}
+	for _, artifact := range artifacts {
+		switch artifact.SupportStatus {
+		case Recommended:
+			stats.Recommended++
+		case Latest:
+			stats.Latest++
+		case Active:
+			stats.Active++
+		case Deprecated:
+			stats.Deprecated++
+		case EOL:
+			stats.EOL++
+		}
+	}
+	return stats
 }
 
 func (s *ArtifactsService) estimateSize(version string, platform string) int64 {

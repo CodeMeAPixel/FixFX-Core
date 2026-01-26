@@ -32,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Format: `{version}-{hash}` (e.g., `24769-315823736cfbc085104ca0d32779311cd2f1a5a8`)
   - Compatible with Pterodactyl, Pelican, and similar hosting panel egg configurations
 
+- **Artifact statistics in API response** - Added `stats` object to metadata
+  - Includes counts for: `total`, `recommended`, `latest`, `active`, `deprecated`, `eol`
+  - Calculated from filtered results before pagination
+  - Enables frontend to show accurate totals regardless of current page
+
 ### Fixed
 - **Pagination total count** - Fixed incorrect total count in pagination metadata
   - Previously returned count of paginated results instead of total filtered results
@@ -41,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated all artifact handlers to use new `ArtifactsResult` return type
 - Refactored `generateFullVersion()` helper to accept hash parameter
+- Added `ArtifactStats` struct and `calculateStats()` helper function
 
 ---
 
