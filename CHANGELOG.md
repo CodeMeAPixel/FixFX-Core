@@ -25,6 +25,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.1] - Unreleased
+
+### Added
+- **Full version string for hosting panels** - Added `FullVersion` field to artifact entries
+  - Format: `{version}-{hash}` (e.g., `24769-315823736cfbc085104ca0d32779311cd2f1a5a8`)
+  - Compatible with Pterodactyl, Pelican, and similar hosting panel egg configurations
+
+### Fixed
+- **Pagination total count** - Fixed incorrect total count in pagination metadata
+  - Previously returned count of paginated results instead of total filtered results
+  - Created `ArtifactsResult` struct to properly track total count after filtering but before pagination
+  - `hasMore` now correctly indicates if more pages are available
+
+### Changed
+- Updated all artifact handlers to use new `ArtifactsResult` return type
+- Refactored `generateFullVersion()` helper to accept hash parameter
+
+---
+
 ## [0.1.0] - 2026-01-25
 
 ### Added

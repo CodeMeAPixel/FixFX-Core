@@ -392,7 +392,7 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult,
 	for version, artifact := range processedData.Windows {
 		artifacts = append(artifacts, ArtifactEntry{
 			Version:       version,
-			FullVersion:   s.generateFullVersion(version),
+			FullVersion:   s.generateFullVersion(version, artifact.Hash),
 			Hash:          artifact.Hash,
 			Platform:      Windows,
 			Date:          artifact.Date,
@@ -404,7 +404,7 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult,
 	for version, artifact := range processedData.Linux {
 		artifacts = append(artifacts, ArtifactEntry{
 			Version:       version,
-			FullVersion:   s.generateFullVersion(version),
+			FullVersion:   s.generateFullVersion(version, artifact.Hash),
 			Hash:          artifact.Hash,
 			Platform:      Linux,
 			Date:          artifact.Date,
@@ -464,9 +464,9 @@ func (s *ArtifactsService) determineSupportStatus(version int) SupportStatus {
 }
 
 // generateFullVersion creates the full version string for hosting panels like Pterodactyl
-// Format: v1.0.0.{build_number} (e.g., v1.0.0.12345)
-func (s *ArtifactsService) generateFullVersion(version string) string {
-	return fmt.Sprintf("v1.0.0.%s", version)
+// Format: {version}-{hash} (e.g., 24769-315823736cfbc085104ca0d32779311cd2f1a5a8)
+func (s *ArtifactsService) generateFullVersion(version string, hash string) string {
+	return fmt.Sprintf("%s-%s", version, hash)
 }
 
 func (s *ArtifactsService) estimateSize(version string, platform string) int64 {
