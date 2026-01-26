@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.1] - Unreleased
+## [0.2.0] - 2026-01-25
 
 ### Added
 - **Full version string for hosting panels** - Added `FullVersion` field to artifact entries
@@ -43,10 +43,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created `ArtifactsResult` struct to properly track total count after filtering but before pagination
   - `hasMore` now correctly indicates if more pages are available
 
+- **Latest vs Recommended logic** - Fixed support status assignment per CFX EOL policy
+  - **Latest** = Single newest version (for testing/bleeding edge)
+  - **Recommended** = Next 3 versions after Latest (stable for production)
+  - Support status now dynamically assigned based on version position, not hardcoded thresholds
+  - See https://aka.cfx.re/eol for CFX official policy
+
+- **EOL filter default** - Changed `includeEol` default from `true` to `false`
+  - EOL artifacts are now excluded by default for safety
+  - Users must explicitly opt-in to see end-of-life versions
+
 ### Changed
 - Updated all artifact handlers to use new `ArtifactsResult` return type
 - Refactored `generateFullVersion()` helper to accept hash parameter
 - Added `ArtifactStats` struct and `calculateStats()` helper function
+- Refactored `ProcessGitHubTags` to dynamically assign Latest/Recommended based on sorted position
+- Simplified `determineSupportStatus()` to only handle Active/Deprecated/EOL thresholds
 
 ---
 

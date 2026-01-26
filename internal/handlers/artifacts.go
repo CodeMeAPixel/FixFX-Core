@@ -37,7 +37,7 @@ func GetArtifacts(c *fiber.Ctx) error {
 		Status:     services.SupportStatus(c.Query("status", "")),
 		SortBy:     c.Query("sortBy", "version"),
 		SortOrder:  c.Query("sortOrder", "desc"),
-		IncludeEOL: c.QueryBool("includeEol", true),
+		IncludeEOL: c.QueryBool("includeEol", false),
 	}
 
 	// Parse limit and offset

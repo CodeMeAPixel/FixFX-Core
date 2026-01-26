@@ -239,7 +239,7 @@ func (s *ArtifactsService) ProcessGitHubTags(tags []GitHubTag) ArtifactData {
 		}
 	}
 
-	// Sort by version number (descending)
+	// Sort by version number (descending) - highest version first
 	sort.Slice(artifactTags, func(i, j int) bool {
 		versionA := s.extractVersionNumber(artifactTags[i].Name)
 		versionB := s.extractVersionNumber(artifactTags[j].Name)
@@ -248,15 +248,28 @@ func (s *ArtifactsService) ProcessGitHubTags(tags []GitHubTag) ArtifactData {
 
 	now := time.Now().UTC().Format(time.RFC3339)
 
-	for _, tag := range artifactTags {
+	for idx, tag := range artifactTags {
 		versionNumber := s.extractVersionNumber(tag.Name)
 		version := strconv.Itoa(versionNumber)
+
+		// Determine support status based on position in sorted list
+		// Position 0 = Latest (newest single version)
+		// Position 1-3 = Recommended (stable versions)
+		// Rest based on version thresholds
+		var status SupportStatus
+		if idx == 0 {
+			status = Latest
+		} else if idx <= 3 {
+			status = Recommended
+		} else {
+			status = s.determineSupportStatus(versionNumber)
+		}
 
 		baseEntry := Artifact{
 			Version:       version,
 			Hash:          tag.Commit.SHA,
 			Date:          now,
-			SupportStatus: s.determineSupportStatus(versionNumber),
+			SupportStatus: status,
 		}
 
 		// Windows artifact
@@ -464,14 +477,16 @@ func (s *ArtifactsService) extractVersionNumber(tagName string) int {
 }
 
 func (s *ArtifactsService) determineSupportStatus(version int) SupportStatus {
+	// Based on CFX EOL policy: https://aka.cfx.re/eol
+	// This is used for versions beyond the top 4 (Latest + 3 Recommended)
+	// which are dynamically assigned in ProcessGitHubTags
+	// Active = still supported but older
+	// Deprecated = support ending soon
+	// EOL = no longer supported
 	switch {
-	case version >= 24500:
-		return Recommended
-	case version >= 24000:
-		return Latest
-	case version >= 23000:
+	case version >= 23000: // Still actively supported
 		return Active
-	case version >= 20000:
+	case version >= 20000: // Support ending
 		return Deprecated
 	default:
 		return EOL
