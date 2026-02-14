@@ -15,8 +15,8 @@ import (
 
 // Version information
 const (
-	Version   = "0.1.0"
-	BuildTime = "2026-01-25"
+	Version   = "0.2.1"
+	BuildTime = "2026-02-13"
 )
 
 // @title FixFX API
