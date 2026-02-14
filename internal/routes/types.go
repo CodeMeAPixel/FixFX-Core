@@ -107,3 +107,32 @@ type ErrorResponse struct {
 	Status int    `json:"status"`
 	Path   string `json:"path,omitempty"`
 }
+
+// ValidateRequest represents the validator input
+type ValidateRequest struct {
+	JSON string `json:"json"`
+	Type string `json:"type"`
+}
+
+// ValidationIssueResponse represents a single validation issue
+type ValidationIssueResponse struct {
+	Path     string `json:"path"`
+	Message  string `json:"message"`
+	Severity string `json:"severity"`
+}
+
+// ValidationResponse represents the validation result
+type ValidationResponse struct {
+	Valid      bool                      `json:"valid"`
+	Type       string                    `json:"type"`
+	Issues     []ValidationIssueResponse `json:"issues"`
+	Formatted  string                    `json:"formatted,omitempty"`
+	ParseError string                    `json:"parseError,omitempty"`
+}
+
+// ValidatorInfoResponse represents validator metadata
+type ValidatorInfoResponse struct {
+	Types        []map[string]string `json:"types"`
+	Placeholders []map[string]string `json:"placeholders"`
+	Limits       map[string]any      `json:"limits"`
+}
