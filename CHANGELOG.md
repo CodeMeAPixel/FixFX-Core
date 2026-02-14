@@ -10,18 +10,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Minor versions** (0.x.0): New features, non-breaking changes
 - **Major versions** (x.0.0): Breaking API changes
 
-## [Unreleased]
+## [0.2.1] - 2026-02-13
 
-### Planned
-- [ ] Chat API endpoint with message persistence
-- [ ] Contributors API with GitHub integration
-- [ ] Global search service (cross-service search)
-- [ ] Redis caching layer for improved performance
-- [ ] Rate limiting middleware
-- [ ] Authentication/Authorization system
-- [ ] Comprehensive test suite
-- [ ] Docker containerization
-- [ ] Monitoring and metrics collection
+### Added
+- **JSON Validator service** - New validation engine with 3 modes
+  - `generic` — JSON syntax validation with formatted output
+  - `txadmin-embed` — Discord embed JSON validation for txAdmin status embeds
+    - Validates all Discord embed properties (title, description, fields, image, thumbnail, author)
+    - Enforces Discord character limits (title: 256, description: 4096, fields: 25, field name: 256, field value: 1024)
+    - Detects unknown/unsupported embed properties
+    - Warns when `color` or `footer` are set (overridden by txAdmin at runtime)
+    - Validates URLs and txAdmin placeholder syntax
+  - `txadmin-embed-config` — txAdmin embed config validation
+    - Validates required fields (`onlineString`, `offlineString`, `onlineColor`, `offlineColor`)
+    - Hex color format validation (#RGB / #RRGGBB)
+    - Button array validation (max 5 buttons, required label/url)
+    - Emoji field validation
+  - User-friendly JSON parse error messages with line/column numbers
+  - Severity levels: error, warning, info
+
+- **Validator API endpoints** (2 endpoints)
+  - `POST /api/validator/validate` — Validate JSON with type-specific schema checks
+  - `GET /api/validator/info` — Get available validation types, txAdmin placeholders, and Discord limits
+
+- **Artifact metadata enrichment** — Real commit dates and file sizes
+  - Fetches actual commit dates from GitHub Git Data API per SHA
+  - Fetches real artifact file sizes via HEAD requests to the CDN
+  - Concurrent enrichment with semaphore (10 parallel requests)
+  - Results cached for 24 hours (commit dates and file sizes never change)
+  - Falls back to estimated values on failure
+
+### Fixed
+- **GitHub API 401 handling** — Automatic retry without authentication
+  - When `GITHUB_TOKEN` is invalid/expired, requests now retry unauthenticated
+  - Prevents complete API failure due to bad credentials
+  - Public repos (citizenfx/fivem) work fine without authentication (60 req/hr rate limit)
+
+- **Artifact dates showing "less than a minute ago"** — All artifacts previously used `time.Now()`
+  - Now fetches real commit dates from GitHub for each artifact
+  - Dates accurately reflect when each version was actually released
+
+- **Artifact sizes all showing 850.0 MB** — Hardcoded estimate for all Windows artifacts
+  - Now fetches real file sizes via HEAD requests to the artifact CDN
+  - Each artifact displays its actual download size
+
+### Changed
+- **Thread-safe cache** — Added `sync.RWMutex` to cache operations
+  - `getCache()` and `setCache()` are now safe for concurrent access
+  - Cache entries now support per-key TTL via `ttl` field on `cacheEntry`
+  - Required for concurrent artifact enrichment
+
+- Updated version to `0.2.1`, build time to `2026-02-13`
 
 ---
 
