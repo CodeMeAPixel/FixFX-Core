@@ -60,6 +60,7 @@ func main() {
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	handlers.InitArtifactsHandler(githubToken)
 	handlers.InitNativesHandler()
+	handlers.InitGameReferencesHandler()
 	handlers.InitSourceHandler(".", nil) // Use current directory as base path
 	handlers.InitContributorsHandler(githubToken)
 	handlers.InitValidatorHandler()
@@ -83,6 +84,7 @@ func main() {
 	// Register route groups
 	routes.RegisterArtifactsRoutes(api)
 	routes.RegisterNativesRoutes(api)
+	routes.RegisterGameReferencesRoutes(api)
 	routes.RegisterSourceRoutes(api)
 	routes.RegisterSearchRoutes(api)
 	routes.RegisterContributorsRoutes(api)
