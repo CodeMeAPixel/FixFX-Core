@@ -64,7 +64,17 @@ func clampPage(total, limit, offset int) (page []int, hasMore bool, safeMeta ser
 // GET /api/game-references/blips
 // ────────────────────────────────────────────────
 
-// GetBlips returns paginated blip data
+// GetBlips handles GET /api/game-references/blips
+// @Summary Get map blips
+// @Description Fetch all minimap blip sprites and the blip colour palette with optional search and pagination
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by blip name"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/blips [get]
 func GetBlips(c *fiber.Ctx) error {
 	blips, colors, err := gameRefService.GetBlips()
 	if err != nil {
@@ -117,7 +127,18 @@ func GetBlips(c *fiber.Ctx) error {
 // GET /api/game-references/checkpoints
 // ────────────────────────────────────────────────
 
-// GetCheckpoints returns paginated checkpoint data
+// GetCheckpoints handles GET /api/game-references/checkpoints
+// @Summary Get checkpoint types
+// @Description Fetch all CREATE_CHECKPOINT type IDs with labels, optionally filtered by section
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by checkpoint ID or label"
+// @Param section query string false "Filter by section (standard/type-44-46)"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/checkpoints [get]
 func GetCheckpoints(c *fiber.Ctx) error {
 	checkpoints, err := gameRefService.GetCheckpoints()
 	if err != nil {
@@ -170,7 +191,17 @@ func GetCheckpoints(c *fiber.Ctx) error {
 // GET /api/game-references/data-files
 // ────────────────────────────────────────────────
 
-// GetDataFiles returns paginated data file entries
+// GetDataFiles handles GET /api/game-references/data-files
+// @Summary Get resource manifest data file types
+// @Description Fetch all data_file keys used in resource manifests with file type, root element, and mounter details
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by key, file type, or mounter"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/data-files [get]
 func GetDataFiles(c *fiber.Ctx) error {
 	files, err := gameRefService.GetDataFiles()
 	if err != nil {
@@ -219,7 +250,17 @@ func GetDataFiles(c *fiber.Ctx) error {
 // GET /api/game-references/game-events
 // ────────────────────────────────────────────────
 
-// GetGameEvents returns paginated game event entries
+// GetGameEvents handles GET /api/game-references/game-events
+// @Summary Get client-side game events
+// @Description Fetch all client-side game events available for resource scripting with descriptions
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by event name or description"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/game-events [get]
 func GetGameEvents(c *fiber.Ctx) error {
 	events, err := gameRefService.GetGameEvents()
 	if err != nil {
@@ -268,7 +309,15 @@ func GetGameEvents(c *fiber.Ctx) error {
 // GET /api/game-references/gamer-tags
 // ────────────────────────────────────────────────
 
-// GetGamerTags returns gamer tag component entries
+// GetGamerTags handles GET /api/game-references/gamer-tags
+// @Summary Get gamer tag components
+// @Description Fetch all head display component IDs for SET_MULTIPLAYER_HANGER_COLOUR and related natives
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by component name"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/gamer-tags [get]
 func GetGamerTags(c *fiber.Ctx) error {
 	components, err := gameRefService.GetGamerTagComponents()
 	if err != nil {
@@ -304,7 +353,17 @@ func GetGamerTags(c *fiber.Ctx) error {
 // GET /api/game-references/hud-colors
 // ────────────────────────────────────────────────
 
-// GetHUDColors returns HUD color entries
+// GetHUDColors handles GET /api/game-references/hud-colors
+// @Summary Get HUD colors
+// @Description Fetch all HUD colour indices with RGBA values and hex codes for use with HUD_COLOUR_* constants
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by color name or hex value"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/hud-colors [get]
 func GetHUDColors(c *fiber.Ctx) error {
 	colors, err := gameRefService.GetHUDColors()
 	if err != nil {
@@ -353,7 +412,15 @@ func GetHUDColors(c *fiber.Ctx) error {
 // GET /api/game-references/markers
 // ────────────────────────────────────────────────
 
-// GetMarkers returns marker type data
+// GetMarkers handles GET /api/game-references/markers
+// @Summary Get DRAW_MARKER types
+// @Description Fetch all DRAW_MARKER type IDs with name labels
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by marker name"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/markers [get]
 func GetMarkers(c *fiber.Ctx) error {
 	markers, err := gameRefService.GetMarkers()
 	if err != nil {
@@ -389,7 +456,17 @@ func GetMarkers(c *fiber.Ctx) error {
 // GET /api/game-references/net-game-events
 // ────────────────────────────────────────────────
 
-// GetNetGameEvents returns net game event entries
+// GetNetGameEvents handles GET /api/game-references/net-game-events
+// @Summary Get net game events
+// @Description Fetch all GTA_EVENT_IDS enum entries with sequential IDs for network event handling
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by event name"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/net-game-events [get]
 func GetNetGameEvents(c *fiber.Ctx) error {
 	events, err := gameRefService.GetNetGameEvents()
 	if err != nil {
@@ -438,7 +515,18 @@ func GetNetGameEvents(c *fiber.Ctx) error {
 // GET /api/game-references/ped-models
 // ────────────────────────────────────────────────
 
-// GetPedModels returns paginated ped model entries
+// GetPedModels handles GET /api/game-references/ped-models
+// @Summary Get pedestrian models
+// @Description Fetch all pedestrian model names grouped by category, suitable for use with REQUEST_MODEL and GET_HASH_KEY
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by model name or category"
+// @Param category query string false "Filter by category name"
+// @Param limit query int false "Results per page" default(50)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/ped-models [get]
 func GetPedModels(c *fiber.Ctx) error {
 	peds, err := gameRefService.GetPedModels()
 	if err != nil {
@@ -502,7 +590,17 @@ func GetPedModels(c *fiber.Ctx) error {
 // GET /api/game-references/pickup-hashes
 // ────────────────────────────────────────────────
 
-// GetPickupHashes returns paginated pickup hash entries
+// GetPickupHashes handles GET /api/game-references/pickup-hashes
+// @Summary Get pickup hashes
+// @Description Fetch all ePickupHashes enum entries with numeric hash values for use with CREATE_PICKUP_ROTATE and related natives
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by pickup name or hash"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/pickup-hashes [get]
 func GetPickupHashes(c *fiber.Ctx) error {
 	pickups, err := gameRefService.GetPickupHashes()
 	if err != nil {
@@ -551,7 +649,18 @@ func GetPickupHashes(c *fiber.Ctx) error {
 // GET /api/game-references/weapon-models
 // ────────────────────────────────────────────────
 
-// GetWeaponModels returns paginated weapon model entries
+// GetWeaponModels handles GET /api/game-references/weapon-models
+// @Summary Get weapon models
+// @Description Fetch all weapon model names grouped by type with hash keys, DLC info, components, and tints
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by weapon name, hash, or group"
+// @Param group query string false "Filter by weapon group"
+// @Param limit query int false "Results per page" default(50)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/weapon-models [get]
 func GetWeaponModels(c *fiber.Ctx) error {
 	weapons, err := gameRefService.GetWeaponModels()
 	if err != nil {
@@ -615,7 +724,17 @@ func GetWeaponModels(c *fiber.Ctx) error {
 // GET /api/game-references/zones
 // ────────────────────────────────────────────────
 
-// GetZones returns paginated zone entries
+// GetZones handles GET /api/game-references/zones
+// @Summary Get map zones
+// @Description Fetch all 1300+ map zone name IDs with descriptions for area detection scripting
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by zone name, ID, or description"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/zones [get]
 func GetZones(c *fiber.Ctx) error {
 	zones, err := gameRefService.GetZones()
 	if err != nil {
@@ -666,4 +785,201 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// ────────────────────────────────────────────────
+// GET /api/game-references/vehicle-models
+// ────────────────────────────────────────────────
+
+// GetVehicleModels handles GET /api/game-references/vehicle-models
+// @Summary Get vehicle models
+// @Description Fetch all GTA V / FiveM vehicle model names and hashes grouped by category, suitable for use with REQUEST_MODEL and GET_HASH_KEY
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by display name, model name, or category"
+// @Param category query string false "Filter by vehicle category"
+// @Param limit query int false "Results per page" default(50)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/vehicle-models [get]
+func GetVehicleModels(c *fiber.Ctx) error {
+	vehicles, err := gameRefService.GetVehicleModels()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":  err.Error(),
+			"status": fiber.StatusInternalServerError,
+		})
+	}
+
+	search := c.Query("search")
+	category := c.Query("category")
+	limit := getIntQuery(c, "limit", 50, 1, 500)
+	offset := getIntQuery(c, "offset", 0, 0, 0)
+
+	filtered := vehicles[:0:0]
+	for _, v := range vehicles {
+		if category != "" && !strings.EqualFold(v.Category, category) {
+			continue
+		}
+		if searchLower(v.DisplayName, search) || searchLower(v.ModelName, search) || searchLower(v.Category, search) {
+			filtered = append(filtered, v)
+		}
+	}
+
+	catSet := make(map[string]struct{})
+	for _, v := range vehicles {
+		catSet[v.Category] = struct{}{}
+	}
+	cats := make([]string, 0, len(catSet))
+	for cat := range catSet {
+		cats = append(cats, cat)
+	}
+
+	total := len(filtered)
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	if offset > total {
+		offset = 0
+		end = min(limit, total)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"count":   len(filtered[offset:end]),
+		"data":    filtered[offset:end],
+		"metadata": fiber.Map{
+			"total":      total,
+			"limit":      limit,
+			"offset":     offset,
+			"hasMore":    end < total,
+			"search":     search,
+			"categories": cats,
+		},
+	})
+}
+
+// ────────────────────────────────────────────────
+// GET /api/game-references/vehicle-colours
+// ────────────────────────────────────────────────
+
+// GetVehicleColours handles GET /api/game-references/vehicle-colours
+// @Summary Get vehicle colours
+// @Description Fetch all vehicle paint colour indices grouped by type (metallic, matte, metals, unnamed) for use with SET_VEHICLE_COLOURS and related natives
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by colour name or type"
+// @Param type query string false "Filter by colour type (metallic/matte/metals/unnamed)"
+// @Param limit query int false "Results per page" default(200)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/vehicle-colours [get]
+func GetVehicleColours(c *fiber.Ctx) error {
+	colours, err := gameRefService.GetVehicleColours()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":  err.Error(),
+			"status": fiber.StatusInternalServerError,
+		})
+	}
+
+	search := c.Query("search")
+	colourType := c.Query("type") // metallic | matte | metals | unnamed
+	limit := getIntQuery(c, "limit", 200, 1, 500)
+	offset := getIntQuery(c, "offset", 0, 0, 0)
+
+	filtered := colours[:0:0]
+	for _, col := range colours {
+		if colourType != "" && !strings.EqualFold(col.Type, colourType) {
+			continue
+		}
+		if searchLower(col.Name, search) || searchLower(col.Type, search) {
+			filtered = append(filtered, col)
+		}
+	}
+
+	total := len(filtered)
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	if offset > total {
+		offset = 0
+		end = min(limit, total)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"count":   len(filtered[offset:end]),
+		"data":    filtered[offset:end],
+		"metadata": services.RefMetadata{
+			Total:   total,
+			Limit:   limit,
+			Offset:  offset,
+			HasMore: end < total,
+			Search:  search,
+		},
+	})
+}
+
+// ────────────────────────────────────────────────
+// GET /api/game-references/vehicle-flags
+// ────────────────────────────────────────────────
+
+// GetVehicleFlags handles GET /api/game-references/vehicle-flags
+// @Summary Get vehicle flags
+// @Description Fetch all vehicle flag definitions with descriptions and the build version they were introduced in
+// @Tags Game References
+// @Produce json
+// @Param search query string false "Filter by flag name or description"
+// @Param limit query int false "Results per page" default(100)
+// @Param offset query int false "Pagination offset" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /game-references/vehicle-flags [get]
+func GetVehicleFlags(c *fiber.Ctx) error {
+	flags, err := gameRefService.GetVehicleFlags()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":  err.Error(),
+			"status": fiber.StatusInternalServerError,
+		})
+	}
+
+	search := c.Query("search")
+	limit := getIntQuery(c, "limit", 100, 1, 500)
+	offset := getIntQuery(c, "offset", 0, 0, 0)
+
+	filtered := flags[:0:0]
+	for _, f := range flags {
+		if searchLower(f.Name, search) || searchLower(f.Description, search) {
+			filtered = append(filtered, f)
+		}
+	}
+
+	total := len(filtered)
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	if offset > total {
+		offset = 0
+		end = min(limit, total)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"count":   len(filtered[offset:end]),
+		"data":    filtered[offset:end],
+		"metadata": services.RefMetadata{
+			Total:   total,
+			Limit:   limit,
+			Offset:  offset,
+			HasMore: end < total,
+			Search:  search,
+		},
+	})
 }

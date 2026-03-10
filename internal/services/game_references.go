@@ -967,6 +967,262 @@ func stripHTML(s string) string {
 // Generic pagination helper
 // ────────────────────────────────────────────────
 
+// VehicleModel represents a GTA V vehicle model entry
+type VehicleModel struct {
+	DisplayName string `json:"displayName"`
+	ModelName   string `json:"modelName"`
+	Hash        string `json:"hash"`
+	Category    string `json:"category"`
+	ImageURL    string `json:"imageUrl"`
+}
+
+// VehicleColour represents a vehicle paint colour
+type VehicleColour struct {
+	Index    int    `json:"index"`
+	Name     string `json:"name"`
+	Type     string `json:"type"` // metallic | matte | metals | unnamed
+	ImageURL string `json:"imageUrl"`
+}
+
+// VehicleFlag represents a vehicle flag definition
+type VehicleFlag struct {
+	Number      int    `json:"number"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Build       string `json:"build"`
+}
+
+// ────────────────────────────────────────────────
+// Vehicle Models
+// ────────────────────────────────────────────────
+
+// GetVehicleModels returns all vehicle model entries
+func (s *GameReferencesService) GetVehicleModels() ([]VehicleModel, error) {
+	const key = "vehicle-models"
+	if cached := s.getCache(key); cached != nil {
+		return cached.([]VehicleModel), nil
+	}
+	content, err := s.fetchText("vehicle-references/vehicle-models.md")
+	if err != nil {
+		return nil, err
+	}
+	vehicles := parseVehicleModels(content)
+	s.setCache(key, vehicles)
+	return vehicles, nil
+}
+
+func parseVehicleModels(content string) []VehicleModel {
+	// Category headings: ## Category Name
+	catRe := regexp.MustCompile(`(?m)^##\s+(.+)$`)
+	type catPos struct {
+		pos  int
+		name string
+	}
+	var catPositions []catPos
+	for _, m := range catRe.FindAllStringSubmatchIndex(content, -1) {
+		name := strings.TrimSpace(content[m[2]:m[3]])
+		if name != "" {
+			catPositions = append(catPositions, catPos{pos: m[0], name: name})
+		}
+	}
+	getCategoryAt := func(pos int) string {
+		cat := ""
+		for _, cp := range catPositions {
+			if cp.pos <= pos {
+				cat = cp.name
+			} else {
+				break
+			}
+		}
+		return cat
+	}
+
+	// Each vehicle block ends with the vehicle-info div then the outer vehicle div
+	divRe := regexp.MustCompile(`(?s)<div class="vehicle">.*?</div>\s*</div>`)
+	imgRe := regexp.MustCompile(`src="/vehicles/([^"]+)"`)
+	displayRe := regexp.MustCompile(`<strong>Display Name:</strong>\s*([^<]+)`)
+	hashRe := regexp.MustCompile(`<strong>Hash:</strong>\s*([^\s<]+)`)
+	modelRe := regexp.MustCompile(`<strong>Model Name:</strong>\s*([^\s<]+)`)
+
+	var vehicles []VehicleModel
+	for _, m := range divRe.FindAllStringIndex(content, -1) {
+		div := content[m[0]:m[1]]
+		pos := m[0]
+
+		displayM := displayRe.FindStringSubmatch(div)
+		modelM := modelRe.FindStringSubmatch(div)
+		if displayM == nil || modelM == nil {
+			continue
+		}
+
+		hash := ""
+		if hm := hashRe.FindStringSubmatch(div); hm != nil {
+			hash = strings.TrimSpace(hm[1])
+		}
+		imageURL := ""
+		if im := imgRe.FindStringSubmatch(div); im != nil {
+			imageURL = imgBaseURL + "/vehicles/" + im[1]
+		}
+		vehicles = append(vehicles, VehicleModel{
+			DisplayName: strings.TrimSpace(displayM[1]),
+			ModelName:   strings.TrimSpace(modelM[1]),
+			Hash:        hash,
+			Category:    getCategoryAt(pos),
+			ImageURL:    imageURL,
+		})
+	}
+	return vehicles
+}
+
+// ────────────────────────────────────────────────
+// Vehicle Colours
+// ────────────────────────────────────────────────
+
+// GetVehicleColours returns all vehicle colour entries
+func (s *GameReferencesService) GetVehicleColours() ([]VehicleColour, error) {
+	const key = "vehicle-colours"
+	if cached := s.getCache(key); cached != nil {
+		return cached.([]VehicleColour), nil
+	}
+	content, err := s.fetchText("vehicle-references/vehicle-colours.md")
+	if err != nil {
+		return nil, err
+	}
+	colours := parseVehicleColours(content)
+	s.setCache(key, colours)
+	return colours, nil
+}
+
+func parseVehicleColours(content string) []VehicleColour {
+	// Detect setext-style h2 section headings: "Title\n-----"
+	sectionRe := regexp.MustCompile(`(?m)^([A-Za-z][^\n]*)\n-{2,}`)
+	type sectionPos struct {
+		pos  int
+		name string
+	}
+	var sections []sectionPos
+	for _, m := range sectionRe.FindAllStringSubmatchIndex(content, -1) {
+		raw := strings.TrimSpace(content[m[2]:m[3]])
+		slug := strings.ToLower(strings.ReplaceAll(raw, " ", "-"))
+		// Normalise: "unnamed-colours" and "unnamed" both → "unnamed"
+		if strings.Contains(slug, "unnamed") {
+			slug = "unnamed"
+		} else if strings.Contains(slug, "metal") && !strings.Contains(slug, "metallic") {
+			slug = "metals"
+		}
+		sections = append(sections, sectionPos{pos: m[0], name: slug})
+	}
+	getSectionAt := func(pos int) string {
+		sec := "metallic"
+		for _, s := range sections {
+			if s.pos <= pos {
+				sec = s.name
+			} else {
+				break
+			}
+		}
+		return sec
+	}
+
+	divRe := regexp.MustCompile(`(?s)<div class="colour">.*?</div>`)
+	idxRe := regexp.MustCompile(`<strong>Index:\s*(\d+)</strong>`)
+	nameRe := regexp.MustCompile(`(?s)<strong>Index:\s*\d+</strong><br>([^<]+)`)
+	imgRe := regexp.MustCompile(`src="/vehicleColours/([^"]+)"`)
+
+	var colours []VehicleColour
+	seen := make(map[int]bool)
+	for _, m := range divRe.FindAllStringIndex(content, -1) {
+		div := content[m[0]:m[1]]
+		pos := m[0]
+
+		idxM := idxRe.FindStringSubmatch(div)
+		if idxM == nil {
+			continue
+		}
+		idx, _ := strconv.Atoi(idxM[1])
+		if seen[idx] {
+			continue
+		}
+		seen[idx] = true
+
+		name := "Unnamed"
+		if nm := nameRe.FindStringSubmatch(div); nm != nil {
+			name = strings.TrimSpace(nm[1])
+		}
+		imageURL := ""
+		if im := imgRe.FindStringSubmatch(div); im != nil {
+			imageURL = imgBaseURL + "/vehicleColours/" + im[1]
+		}
+		colours = append(colours, VehicleColour{
+			Index:    idx,
+			Name:     name,
+			Type:     getSectionAt(pos),
+			ImageURL: imageURL,
+		})
+	}
+	return colours
+}
+
+// ────────────────────────────────────────────────
+// Vehicle Flags
+// ────────────────────────────────────────────────
+
+// GetVehicleFlags returns all vehicle flag entries
+func (s *GameReferencesService) GetVehicleFlags() ([]VehicleFlag, error) {
+	const key = "vehicle-flags"
+	if cached := s.getCache(key); cached != nil {
+		return cached.([]VehicleFlag), nil
+	}
+	content, err := s.fetchText("vehicle-references/vehicle-flags.md")
+	if err != nil {
+		return nil, err
+	}
+	flags := parseVehicleFlags(content)
+	s.setCache(key, flags)
+	return flags, nil
+}
+
+func parseVehicleFlags(content string) []VehicleFlag {
+	var flags []VehicleFlag
+	lines := strings.Split(content, "\n")
+	headerPassed := false
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "|") {
+			continue
+		}
+		if strings.Contains(line, "---") {
+			headerPassed = true
+			continue
+		}
+		if !headerPassed {
+			continue
+		}
+		cols := splitTableRow(line)
+		if len(cols) < 3 {
+			continue
+		}
+		num, err := strconv.Atoi(strings.TrimSpace(cols[0]))
+		if err != nil {
+			continue
+		}
+		build := ""
+		if len(cols) >= 4 {
+			build = strings.TrimSpace(cols[3])
+		}
+		flags = append(flags, VehicleFlag{
+			Number:      num,
+			Name:        strings.TrimSpace(cols[1]),
+			Description: strings.TrimSpace(cols[2]),
+			Build:       build,
+		})
+	}
+	return flags
+}
+
+// ────────────────────────────────────────────────
+
 // RefQuery holds common query parameters for game reference endpoints
 type RefQuery struct {
 	Search string

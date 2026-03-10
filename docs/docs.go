@@ -238,9 +238,827 @@ const docTemplate = `{
                 }
             }
         },
+        "/contributors": {
+            "get": {
+                "description": "Fetch merged contributors from the FixFX and FixFX-Core GitHub repositories, sorted by total contributions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contributors"
+                ],
+                "summary": "Get contributors",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Maximum number of contributors to return (0 = all)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.Contributor"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/contributors/stats": {
+            "get": {
+                "description": "Return aggregate statistics about contributors across the FixFX and FixFX-Core repositories",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contributors"
+                ],
+                "summary": "Get contributor statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/blips": {
+            "get": {
+                "description": "Fetch all minimap blip sprites and the blip colour palette with optional search and pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get map blips",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by blip name",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/checkpoints": {
+            "get": {
+                "description": "Fetch all CREATE_CHECKPOINT type IDs with labels, optionally filtered by section",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get checkpoint types",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by checkpoint ID or label",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by section (standard/type-44-46)",
+                        "name": "section",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/data-files": {
+            "get": {
+                "description": "Fetch all data_file keys used in resource manifests with file type, root element, and mounter details",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get resource manifest data file types",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by key, file type, or mounter",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/game-events": {
+            "get": {
+                "description": "Fetch all client-side game events available for resource scripting with descriptions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get client-side game events",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by event name or description",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/gamer-tags": {
+            "get": {
+                "description": "Fetch all head display component IDs for SET_MULTIPLAYER_HANGER_COLOUR and related natives",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get gamer tag components",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by component name",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/hud-colors": {
+            "get": {
+                "description": "Fetch all HUD colour indices with RGBA values and hex codes for use with HUD_COLOUR_* constants",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get HUD colors",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by color name or hex value",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/markers": {
+            "get": {
+                "description": "Fetch all DRAW_MARKER type IDs with name labels",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get DRAW_MARKER types",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by marker name",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/net-game-events": {
+            "get": {
+                "description": "Fetch all GTA_EVENT_IDS enum entries with sequential IDs for network event handling",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get net game events",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by event name",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/ped-models": {
+            "get": {
+                "description": "Fetch all pedestrian model names grouped by category, suitable for use with REQUEST_MODEL and GET_HASH_KEY",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get pedestrian models",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by model name or category",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by category name",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/pickup-hashes": {
+            "get": {
+                "description": "Fetch all ePickupHashes enum entries with numeric hash values for use with CREATE_PICKUP_ROTATE and related natives",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get pickup hashes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by pickup name or hash",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/vehicle-colours": {
+            "get": {
+                "description": "Fetch all vehicle paint colour indices grouped by type (metallic, matte, metals, unnamed) for use with SET_VEHICLE_COLOURS and related natives",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get vehicle colours",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by colour name or type",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by colour type (metallic/matte/metals/unnamed)",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 200,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/vehicle-flags": {
+            "get": {
+                "description": "Fetch all vehicle flag definitions with descriptions and the build version they were introduced in",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get vehicle flags",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by flag name or description",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/vehicle-models": {
+            "get": {
+                "description": "Fetch all GTA V / FiveM vehicle model names and hashes grouped by category, suitable for use with REQUEST_MODEL and GET_HASH_KEY",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get vehicle models",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by display name, model name, or category",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by vehicle category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/weapon-models": {
+            "get": {
+                "description": "Fetch all weapon model names grouped by type with hash keys, DLC info, components, and tints",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get weapon models",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by weapon name, hash, or group",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by weapon group",
+                        "name": "group",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/game-references/zones": {
+            "get": {
+                "description": "Fetch all 1300+ map zone name IDs with descriptions for area detection scripting",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game References"
+                ],
+                "summary": "Get map zones",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by zone name, ID, or description",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
-                "description": "Check if the API is running",
+                "description": "Check if the API is running and get version information",
                 "produces": [
                     "application/json"
                 ],
@@ -253,9 +1071,7 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -552,13 +1368,114 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/validator/info": {
+            "get": {
+                "description": "Get available validation types, txAdmin placeholders, and schema info",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Validator"
+                ],
+                "summary": "Get validator information",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/validator/validate": {
+            "post": {
+                "description": "Validate JSON with optional txAdmin embed/config schema validation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Validator"
+                ],
+                "summary": "Validate JSON",
+                "parameters": [
+                    {
+                        "description": "JSON to validate",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ValidateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.Contributor": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "contributions": {
+                    "type": "integer"
+                },
+                "html_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ValidateRequest": {
+            "type": "object",
+            "properties": {
+                "json": {
+                    "type": "string",
+                    "example": "{\"key\":\"value\"}"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "generic"
+                }
+            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0.0",
+	Version:          "0.1.0",
 	Host:             "localhost:3001",
 	BasePath:         "/api",
 	Schemes:          []string{"http", "https"},

@@ -81,14 +81,15 @@ type NativesQuery struct {
 }
 
 type NativesMetadata struct {
-	Total            int
-	Limit            int
-	Offset           int
-	HasMore          bool
-	Namespaces       []string
-	Games            []string
-	EnvironmentStats map[string]int
-	Query            NativesQuery
+	Total                  int                            `json:"total"`
+	Limit                  int                            `json:"limit"`
+	Offset                 int                            `json:"offset"`
+	HasMore                bool                           `json:"hasMore"`
+	Namespaces             []string                       `json:"namespaces"`
+	NamespacesByGameAndEnv map[string]map[string][]string `json:"namespacesByGameAndEnv"`
+	HasCfxNamespace        bool                           `json:"hasCfxNamespace"`
+	Games                  []string                       `json:"games"`
+	EnvironmentStats       map[string]int                 `json:"environmentStats"`
 }
 
 type NativesResponse struct {
@@ -350,32 +351,11 @@ func (s *NativesService) GetNatives(query NativesQuery) (NativesResponse, error)
 	if query.Limit > 200 {
 		query.Limit = 200
 	}
-	if query.IncludeCfx == false && query.Environment != AllEnv {
-		// IncludeCfx defaults to true
-		query.IncludeCfx = true
-	}
 
 	// Determine sources to fetch
 	sources := []NativeSource{NativeSource(query.Game)}
 	if query.IncludeCfx {
 		sources = append(sources, CFXSource)
-	}
-	if query.FullMetadata {
-		otherGame := GTA5Game
-		if query.Game == GTA5Game {
-			otherGame = RDR3Game
-		}
-		// Check if not already in sources
-		alreadyExists := false
-		for _, src := range sources {
-			if src == NativeSource(otherGame) {
-				alreadyExists = true
-				break
-			}
-		}
-		if !alreadyExists {
-			sources = append(sources, NativeSource(otherGame))
-		}
 	}
 
 	// Fetch raw data
@@ -384,7 +364,16 @@ func (s *NativesService) GetNatives(query NativesQuery) (NativesResponse, error)
 	// Process raw data
 	allNatives := s.ProcessMultipleSources(rawDataSources)
 
-	// Filter
+	// Apply game+cfx filter only (no env/namespace/search) for metadata:
+	// this gives us the full picture of what's available for this game selection.
+	metaQuery := NativesQuery{
+		Game:        query.Game,
+		IncludeCfx:  query.IncludeCfx,
+		Environment: AllEnv,
+	}
+	gameFiltered := s.FilterNatives(allNatives, metaQuery)
+
+	// Apply all filters for the actual paginated response
 	filtered := s.FilterNatives(allNatives, query)
 
 	// Sort by relevance
@@ -393,31 +382,60 @@ func (s *NativesService) GetNatives(query NativesQuery) (NativesResponse, error)
 	// Paginate
 	paginated := s.PaginateNatives(sorted, query.Limit, query.Offset)
 
-	// Build metadata
-	metadata := NativesMetadata{
-		Total:   len(sorted),
-		Limit:   query.Limit,
-		Offset:  query.Offset,
-		HasMore: query.Offset+query.Limit < len(sorted),
-		Query:   query,
-	}
-
-	// Calculate unique namespaces and environments
+	// Build metadata from game-filtered set (not search/namespace filtered)
 	namespaceSet := make(map[string]bool)
 	environmentStats := make(map[string]int)
+	hasCfxNamespace := false
+	nsForEnv := make(map[string]map[string]bool) // env -> ns -> bool
 
-	for _, native := range allNatives {
-		namespaceSet[native.NS] = true
-		environmentStats[native.Environment]++
+	for _, n := range gameFiltered {
+		namespaceSet[n.NS] = true
+		environmentStats[n.Environment]++
+		if n.IsCfx || n.NS == "CFX" {
+			hasCfxNamespace = true
+		}
+		env := n.Environment
+		if nsForEnv[env] == nil {
+			nsForEnv[env] = make(map[string]bool)
+		}
+		nsForEnv[env][n.NS] = true
+		if nsForEnv["all"] == nil {
+			nsForEnv["all"] = make(map[string]bool)
+		}
+		nsForEnv["all"][n.NS] = true
 	}
+	environmentStats["total"] = len(gameFiltered)
 
+	namespaces := make([]string, 0, len(namespaceSet))
 	for ns := range namespaceSet {
-		metadata.Namespaces = append(metadata.Namespaces, ns)
+		namespaces = append(namespaces, ns)
 	}
-	sort.Strings(metadata.Namespaces)
+	sort.Strings(namespaces)
 
-	metadata.EnvironmentStats = environmentStats
-	metadata.Games = []string{string(query.Game)}
+	// Build namespacesByGameAndEnv: game -> env -> sorted []namespaces
+	namespacesByGameAndEnv := make(map[string]map[string][]string)
+	gameKey := string(query.Game)
+	namespacesByGameAndEnv[gameKey] = make(map[string][]string)
+	for env, nsMap := range nsForEnv {
+		nsList := make([]string, 0, len(nsMap))
+		for ns := range nsMap {
+			nsList = append(nsList, ns)
+		}
+		sort.Strings(nsList)
+		namespacesByGameAndEnv[gameKey][env] = nsList
+	}
+
+	metadata := NativesMetadata{
+		Total:                  len(sorted),
+		Limit:                  query.Limit,
+		Offset:                 query.Offset,
+		HasMore:                query.Offset+query.Limit < len(sorted),
+		Namespaces:             namespaces,
+		NamespacesByGameAndEnv: namespacesByGameAndEnv,
+		HasCfxNamespace:        hasCfxNamespace,
+		EnvironmentStats:       environmentStats,
+		Games:                  []string{string(query.Game)},
+	}
 
 	return NativesResponse{
 		Data:     paginated,

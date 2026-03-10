@@ -12,6 +12,12 @@ func InitValidatorHandler() {
 	validatorService = services.NewValidatorService()
 }
 
+// ValidateRequest is the request body for JSON validation
+type ValidateRequest struct {
+	JSON string `json:"json" example:"{\"key\":\"value\"}"`
+	Type string `json:"type" example:"generic"`
+}
+
 // ValidateJSON handles POST /api/validator/validate
 // @Summary Validate JSON
 // @Description Validate JSON with optional txAdmin embed/config schema validation
@@ -23,10 +29,7 @@ func InitValidatorHandler() {
 // @Failure 400 {object} map[string]interface{}
 // @Router /validator/validate [post]
 func ValidateJSON(c *fiber.Ctx) error {
-	var req struct {
-		JSON string `json:"json"`
-		Type string `json:"type"`
-	}
+	var req ValidateRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
