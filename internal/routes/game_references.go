@@ -21,4 +21,7 @@ func RegisterGameReferencesRoutes(api fiber.Router) {
 	gr.Get("/pickup-hashes", handlers.GetPickupHashes)
 	gr.Get("/weapon-models", handlers.GetWeaponModels)
 	gr.Get("/zones", handlers.GetZones)
+	gr.Get("/vehicle-models", handlers.GetVehicleModels)
+	gr.Get("/vehicle-colours", handlers.GetVehicleColours)
+	gr.Get("/vehicle-flags", handlers.GetVehicleFlags)
 }

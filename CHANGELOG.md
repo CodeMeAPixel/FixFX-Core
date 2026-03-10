@@ -10,6 +10,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Minor versions** (0.x.0): New features, non-breaking changes
 - **Major versions** (x.0.0): Breaking API changes
 
+## [0.2.2] - 2026-03-04
+
+### Added
+- **Game References service** — New service fetching and parsing 12 GTA V / FiveM reference types from the official `citizenfx/fivem-docs` GitHub repository (raw markdown, no scraping)
+  - `blips` — All minimap blip icons with IDs, names, and image URLs; optional blip color table
+  - `checkpoints` — All checkpoint types split by section (standard 0–49 and type 44–46 variant)
+  - `data-files` — All `data_file` manifest keys with file type, root element, mounter, and example
+  - `game-events` — Client-side game events with names and descriptions
+  - `gamer-tags` — Head display (gamer tag) component IDs and names
+  - `hud-colors` — All ~234 HUD color indices with RGBA values and hex codes
+  - `markers` — All 44 `DRAW_MARKER` types with IDs, names, and image URLs
+  - `net-game-events` — Ordered `GTA_EVENT_IDS` enum entries with sequential IDs
+  - `ped-models` — All pedestrian models organised by category with prop/component counts and images
+  - `pickup-hashes` — All `ePickupHashes` enum entries with numeric hash values
+  - `weapon-models` — All weapons grouped by type with hash keys, model hash keys, DLC, description, components, and tints
+  - `zones` — All 1300+ map zones with zone name ID, zone name, and description
+
+- **Game References API endpoints** (12 endpoints under `/api/game-references`)
+  - `GET /api/game-references/blips` — Blip icons + optional color table; supports `?search=`
+  - `GET /api/game-references/checkpoints` — Checkpoint types; supports `?section=standard|type-44-46`
+  - `GET /api/game-references/data-files` — Data file types; supports `?search=`
+  - `GET /api/game-references/game-events` — Game events; supports `?search=`
+  - `GET /api/game-references/gamer-tags` — Gamer tag components; supports `?search=`
+  - `GET /api/game-references/hud-colors` — HUD colors; supports `?search=`
+  - `GET /api/game-references/markers` — World markers; supports `?search=`
+  - `GET /api/game-references/net-game-events` — Net game events; supports `?search=`
+  - `GET /api/game-references/ped-models` — Ped models; supports `?search=` and `?category=`
+  - `GET /api/game-references/pickup-hashes` — Pickup hashes; supports `?search=`
+  - `GET /api/game-references/weapon-models` — Weapon models; supports `?search=` and `?group=`
+  - `GET /api/game-references/zones` — Map zones; supports `?search=`
+  - All endpoints support `?limit=` and `?offset=` for pagination
+  - All responses follow the standard `{ success, count, data, metadata }` envelope
+
+- **Data source caching** — All game reference data cached in-memory for 1 hour (matching native/artifact TTL)
+- **Markdown and HTML parsers** — Custom parsers for each data format (HTML divs, C enums, markdown tables, inline HTML tables) without external dependencies
+
+---
+
 ## [0.2.1] - 2026-02-13
 
 ### Added

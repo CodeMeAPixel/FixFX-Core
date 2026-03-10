@@ -43,7 +43,15 @@ func InitContributorsHandler(githubToken string) {
 	}
 }
 
-// GetContributorsHandler is the exported handler function for getting contributors
+// GetContributorsHandler handles GET /api/contributors
+// @Summary Get contributors
+// @Description Fetch merged contributors from the FixFX and FixFX-Core GitHub repositories, sorted by total contributions
+// @Tags Contributors
+// @Produce json
+// @Param limit query int false "Maximum number of contributors to return (0 = all)"
+// @Success 200 {array} handlers.Contributor
+// @Failure 500 {object} map[string]interface{}
+// @Router /contributors [get]
 func GetContributorsHandler(c *fiber.Ctx) error {
 	if contributorsHandler == nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -53,7 +61,14 @@ func GetContributorsHandler(c *fiber.Ctx) error {
 	return contributorsHandler.GetContributors(c)
 }
 
-// GetContributorsStatsHandler is the exported handler function for getting stats
+// GetContributorsStatsHandler handles GET /api/contributors/stats
+// @Summary Get contributor statistics
+// @Description Return aggregate statistics about contributors across the FixFX and FixFX-Core repositories
+// @Tags Contributors
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /contributors/stats [get]
 func GetContributorsStatsHandler(c *fiber.Ctx) error {
 	if contributorsHandler == nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
