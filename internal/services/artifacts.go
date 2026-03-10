@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -88,10 +89,21 @@ type ArtifactEntry struct {
 	Size          int64
 }
 
+// ArtifactStats holds counts by support status
+type ArtifactStats struct {
+	Total       int `json:"total"`
+	Recommended int `json:"recommended"`
+	Latest      int `json:"latest"`
+	Active      int `json:"active"`
+	Deprecated  int `json:"deprecated"`
+	EOL         int `json:"eol"`
+}
+
 // ArtifactsResult holds paginated results with metadata
 type ArtifactsResult struct {
 	Data       []ArtifactEntry
 	Total      int
+	Stats      ArtifactStats
 	FilteredBy string
 }
 
@@ -99,12 +111,21 @@ type ArtifactsResult struct {
 type cacheEntry struct {
 	data      interface{}
 	timestamp int64
+	ttl       int64
 }
 
 type ArtifactsService struct {
 	githubToken string
 	cache       map[string]*cacheEntry
+	cacheMu     sync.RWMutex
 	httpClient  *http.Client
+}
+
+// gitCommitResponse represents the commit details from the GitHub Git Data API
+type gitCommitResponse struct {
+	Committer struct {
+		Date time.Time `json:"date"`
+	} `json:"committer"`
 }
 
 const (
@@ -228,24 +249,37 @@ func (s *ArtifactsService) ProcessGitHubTags(tags []GitHubTag) ArtifactData {
 		}
 	}
 
-	// Sort by version number (descending)
+	// Sort by version number (descending) - highest version first
 	sort.Slice(artifactTags, func(i, j int) bool {
 		versionA := s.extractVersionNumber(artifactTags[i].Name)
 		versionB := s.extractVersionNumber(artifactTags[j].Name)
 		return versionA > versionB
 	})
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	fallbackDate := time.Now().UTC().Format(time.RFC3339)
 
-	for _, tag := range artifactTags {
+	for idx, tag := range artifactTags {
 		versionNumber := s.extractVersionNumber(tag.Name)
 		version := strconv.Itoa(versionNumber)
+
+		// Determine support status based on position in sorted list
+		// Position 0 = Latest (newest single version)
+		// Position 1-3 = Recommended (stable versions)
+		// Rest based on version thresholds
+		var status SupportStatus
+		if idx == 0 {
+			status = Latest
+		} else if idx <= 3 {
+			status = Recommended
+		} else {
+			status = s.determineSupportStatus(versionNumber)
+		}
 
 		baseEntry := Artifact{
 			Version:       version,
 			Hash:          tag.Commit.SHA,
-			Date:          now,
-			SupportStatus: s.determineSupportStatus(versionNumber),
+			Date:          fallbackDate,
+			SupportStatus: status,
 		}
 
 		// Windows artifact
@@ -273,6 +307,9 @@ func (s *ArtifactsService) ProcessGitHubTags(tags []GitHubTag) ArtifactData {
 	if len(processedData.Windows) == 0 {
 		return s.generateFallbackData()
 	}
+
+	// Enrich artifacts with real dates and sizes from GitHub API and artifact CDN
+	s.enrichArtifacts(&processedData)
 
 	return processedData
 }
@@ -392,7 +429,7 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult,
 	for version, artifact := range processedData.Windows {
 		artifacts = append(artifacts, ArtifactEntry{
 			Version:       version,
-			FullVersion:   s.generateFullVersion(version),
+			FullVersion:   s.generateFullVersion(version, artifact.Hash),
 			Hash:          artifact.Hash,
 			Platform:      Windows,
 			Date:          artifact.Date,
@@ -404,7 +441,7 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult,
 	for version, artifact := range processedData.Linux {
 		artifacts = append(artifacts, ArtifactEntry{
 			Version:       version,
-			FullVersion:   s.generateFullVersion(version),
+			FullVersion:   s.generateFullVersion(version, artifact.Hash),
 			Hash:          artifact.Hash,
 			Platform:      Linux,
 			Date:          artifact.Date,
@@ -420,6 +457,9 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult,
 	// Store total count after filtering but before pagination
 	totalFiltered := len(filtered)
 
+	// Calculate stats from filtered results (before pagination)
+	stats := s.calculateStats(filtered)
+
 	// Apply sorting
 	sorted := s.SortArtifacts(filtered, query.SortBy, query.SortOrder)
 
@@ -432,6 +472,7 @@ func (s *ArtifactsService) GetArtifacts(query ArtifactsQuery) (*ArtifactsResult,
 	return &ArtifactsResult{
 		Data:  paginated,
 		Total: totalFiltered,
+		Stats: stats,
 	}, nil
 }
 
@@ -449,14 +490,16 @@ func (s *ArtifactsService) extractVersionNumber(tagName string) int {
 }
 
 func (s *ArtifactsService) determineSupportStatus(version int) SupportStatus {
+	// Based on CFX EOL policy: https://aka.cfx.re/eol
+	// This is used for versions beyond the top 4 (Latest + 3 Recommended)
+	// which are dynamically assigned in ProcessGitHubTags
+	// Active = still supported but older
+	// Deprecated = support ending soon
+	// EOL = no longer supported
 	switch {
-	case version >= 24500:
-		return Recommended
-	case version >= 24000:
-		return Latest
-	case version >= 23000:
+	case version >= 23000: // Still actively supported
 		return Active
-	case version >= 20000:
+	case version >= 20000: // Support ending
 		return Deprecated
 	default:
 		return EOL
@@ -464,17 +507,184 @@ func (s *ArtifactsService) determineSupportStatus(version int) SupportStatus {
 }
 
 // generateFullVersion creates the full version string for hosting panels like Pterodactyl
-// Format: v1.0.0.{build_number} (e.g., v1.0.0.12345)
-func (s *ArtifactsService) generateFullVersion(version string) string {
-	return fmt.Sprintf("v1.0.0.%s", version)
+// Format: {version}-{hash} (e.g., 24769-315823736cfbc085104ca0d32779311cd2f1a5a8)
+func (s *ArtifactsService) generateFullVersion(version string, hash string) string {
+	return fmt.Sprintf("%s-%s", version, hash)
+}
+
+// calculateStats calculates artifact counts by support status
+func (s *ArtifactsService) calculateStats(artifacts []ArtifactEntry) ArtifactStats {
+	stats := ArtifactStats{
+		Total: len(artifacts),
+	}
+	for _, artifact := range artifacts {
+		switch artifact.SupportStatus {
+		case Recommended:
+			stats.Recommended++
+		case Latest:
+			stats.Latest++
+		case Active:
+			stats.Active++
+		case Deprecated:
+			stats.Deprecated++
+		case EOL:
+			stats.EOL++
+		}
+	}
+	return stats
 }
 
 func (s *ArtifactsService) estimateSize(version string, platform string) int64 {
-	// Rough estimates in MB
+	// Rough estimates in bytes as fallback when HEAD requests fail
 	if platform == "windows" {
-		return 850 * 1024 * 1024 // 850 MB
+		return 850 * 1024 * 1024 // ~850 MB
 	}
-	return 400 * 1024 * 1024 // 400 MB
+	return 400 * 1024 * 1024 // ~400 MB
+}
+
+// fetchCommitDate retrieves the actual commit date for a given SHA from the GitHub Git Data API.
+// Results are cached per-SHA since commit dates never change.
+func (s *ArtifactsService) fetchCommitDate(sha string) (string, error) {
+	cacheKey := fmt.Sprintf("commit_date_%s", sha)
+	if cached := s.getCache(cacheKey); cached != nil {
+		if date, ok := cached.(string); ok {
+			return date, nil
+		}
+	}
+
+	url := fmt.Sprintf("https://api.github.com/repos/citizenfx/fivem/git/commits/%s", sha)
+	var commit gitCommitResponse
+	if err := s.fetchJSONFromGitHub(url, &commit); err != nil {
+		return "", err
+	}
+
+	date := commit.Committer.Date.UTC().Format(time.RFC3339)
+	// Cache for 24 hours — commit dates never change
+	s.setCache(cacheKey, date, cacheDuration*24)
+	return date, nil
+}
+
+// fetchArtifactSize does a HEAD request to the artifact CDN to get the real file size.
+// Results are cached per-URL since released artifact sizes never change.
+func (s *ArtifactsService) fetchArtifactSize(artifactURL string) (int64, error) {
+	cacheKey := fmt.Sprintf("artifact_size_%s", artifactURL)
+	if cached := s.getCache(cacheKey); cached != nil {
+		if size, ok := cached.(int64); ok {
+			return size, nil
+		}
+	}
+
+	req, err := http.NewRequest("HEAD", artifactURL, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("HEAD request failed with status %d", resp.StatusCode)
+	}
+
+	cl := resp.Header.Get("Content-Length")
+	if cl == "" {
+		return 0, fmt.Errorf("no Content-Length header in response")
+	}
+
+	size, err := strconv.ParseInt(cl, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	// Cache for 24 hours — released artifact sizes don't change
+	s.setCache(cacheKey, size, cacheDuration*24)
+	return size, nil
+}
+
+// enrichArtifacts concurrently fetches real commit dates and file sizes for all artifacts.
+// It updates the ArtifactData in place. On failure for any individual artifact,
+// the original estimated values are preserved.
+func (s *ArtifactsService) enrichArtifacts(data *ArtifactData) {
+	type enrichRequest struct {
+		version  string
+		platform PlatformType
+		sha      string
+		url      string
+	}
+
+	var requests []enrichRequest
+	for v, a := range data.Windows {
+		requests = append(requests, enrichRequest{v, Windows, a.Hash, a.URL})
+	}
+	for v, a := range data.Linux {
+		requests = append(requests, enrichRequest{v, Linux, a.Hash, a.URL})
+	}
+
+	type enrichResult struct {
+		version  string
+		platform PlatformType
+		date     string
+		size     int64
+	}
+
+	results := make(chan enrichResult, len(requests))
+	sem := make(chan struct{}, 10) // limit to 10 concurrent requests
+
+	var wg sync.WaitGroup
+	for _, req := range requests {
+		wg.Add(1)
+		go func(r enrichRequest) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			res := enrichResult{version: r.version, platform: r.platform}
+
+			// Fetch real commit date
+			if date, err := s.fetchCommitDate(r.sha); err == nil {
+				res.date = date
+			}
+
+			// Fetch real file size
+			if size, err := s.fetchArtifactSize(r.url); err == nil {
+				res.size = size
+			}
+
+			results <- res
+		}(req)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for result := range results {
+		if result.platform == Windows {
+			if a, ok := data.Windows[result.version]; ok {
+				if result.date != "" {
+					a.Date = result.date
+				}
+				if result.size > 0 {
+					a.Size = result.size
+				}
+				data.Windows[result.version] = a
+			}
+		} else {
+			if a, ok := data.Linux[result.version]; ok {
+				if result.date != "" {
+					a.Date = result.date
+				}
+				if result.size > 0 {
+					a.Size = result.size
+				}
+				data.Linux[result.version] = a
+			}
+		}
+	}
 }
 
 func (s *ArtifactsService) parseVersion(version string) int {
@@ -546,19 +756,38 @@ func (s *ArtifactsService) generateFallbackData() ArtifactData {
 }
 
 func (s *ArtifactsService) getCache(key string) interface{} {
-	if entry, exists := s.cache[key]; exists {
-		if time.Now().UnixMilli()-entry.timestamp < cacheDuration {
-			return entry.data
-		}
-		delete(s.cache, key)
+	s.cacheMu.RLock()
+	entry, exists := s.cache[key]
+	s.cacheMu.RUnlock()
+
+	if !exists {
+		return nil
 	}
+
+	ttl := entry.ttl
+	if ttl == 0 {
+		ttl = cacheDuration
+	}
+
+	if time.Now().UnixMilli()-entry.timestamp < ttl {
+		return entry.data
+	}
+
+	// Evict stale entry
+	s.cacheMu.Lock()
+	delete(s.cache, key)
+	s.cacheMu.Unlock()
+
 	return nil
 }
 
 func (s *ArtifactsService) setCache(key string, data interface{}, duration int64) {
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
 	s.cache[key] = &cacheEntry{
 		data:      data,
 		timestamp: time.Now().UnixMilli(),
+		ttl:       duration,
 	}
 }
 
@@ -583,6 +812,19 @@ func (s *ArtifactsService) fetchJSONFromGitHub(url string, result interface{}) e
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return err
+	}
+
+	// If the token is invalid/expired, retry without authentication
+	if resp.StatusCode == http.StatusUnauthorized && s.githubToken != "" {
+		resp.Body.Close()
+		req, err = http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+		resp, err = s.httpClient.Do(req)
+		if err != nil {
+			return err
+		}
 	}
 	defer resp.Body.Close()
 

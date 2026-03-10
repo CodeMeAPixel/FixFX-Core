@@ -10,18 +10,158 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Minor versions** (0.x.0): New features, non-breaking changes
 - **Major versions** (x.0.0): Breaking API changes
 
-## [Unreleased]
+## [0.2.3] - 2026-03-10
 
-### Planned
-- [ ] Chat API endpoint with message persistence
-- [ ] Contributors API with GitHub integration
-- [ ] Global search service (cross-service search)
-- [ ] Redis caching layer for improved performance
-- [ ] Rate limiting middleware
-- [ ] Authentication/Authorization system
-- [ ] Comprehensive test suite
-- [ ] Docker containerization
-- [ ] Monitoring and metrics collection
+### Added
+- **Vehicle References** — 3 new game reference types under `/api/game-references`
+  - `vehicle-models` — All GTA V / FiveM vehicle model names, model hashes, display names, and category groupings, suitable for use with `REQUEST_MODEL` and `GET_HASH_KEY`
+  - `vehicle-colours` — All vehicle paint colour indices with names and types (metallic, matte, metals, unnamed) for use with `SET_VEHICLE_COLOURS` and related natives
+  - `vehicle-flags` — All vehicle flag definitions with flag number, name, description, and the build version they were introduced in
+- **Vehicle Reference API endpoints** (3 endpoints added to `/api/game-references`)
+  - `GET /api/game-references/vehicle-models` — Vehicle models; supports `?search=` and `?category=`
+  - `GET /api/game-references/vehicle-colours` — Vehicle paint colours; supports `?search=` and `?type=`
+  - `GET /api/game-references/vehicle-flags` — Vehicle flags; supports `?search=`
+  - All endpoints support `?limit=` and `?offset=` for pagination
+
+- **Swagger documentation** — Added `@Summary`, `@Tags`, `@Param`, `@Success`, and `@Failure` annotations to all handlers that previously lacked them
+  - All 15 game reference handlers now fully documented
+  - Both contributor handlers (`GetContributors`, `GetContributor`) now documented
+  - Validator handlers (`ValidateJSON`, `GetValidatorInfo`) now documented
+
+### Fixed
+- **`NativesMetadata` missing JSON tags** — All struct fields were PascalCase without `json:""` tags, causing every metadata field to deserialize as `undefined` on the frontend; all fields now use correct camelCase JSON tags
+- **`IncludeCfx` default override bug** — A conditional block unconditionally forced `IncludeCfx = true` whenever an environment filter was active, making it impossible to exclude CFX natives; the block has been removed
+- **`environmentStats` built from wrong set** — Stats were computed after game-filter but before environment-filter, producing inflated counts; stats now reflect the fully-filtered native set
+- **Swagger `ValidateRequest` anonymous struct** — `ValidateJSON` used an anonymous struct for its request body, which `swag` cannot document; extracted to a named `ValidateRequest` type so `make swagger` succeeds without errors
+
+---
+
+## [0.2.2] - 2026-03-04
+
+### Added
+- **Game References service** — New service fetching and parsing 12 GTA V / FiveM reference types from the official `citizenfx/fivem-docs` GitHub repository (raw markdown, no scraping)
+  - `blips` — All minimap blip icons with IDs, names, and image URLs; optional blip color table
+  - `checkpoints` — All checkpoint types split by section (standard 0–49 and type 44–46 variant)
+  - `data-files` — All `data_file` manifest keys with file type, root element, mounter, and example
+  - `game-events` — Client-side game events with names and descriptions
+  - `gamer-tags` — Head display (gamer tag) component IDs and names
+  - `hud-colors` — All ~234 HUD color indices with RGBA values and hex codes
+  - `markers` — All 44 `DRAW_MARKER` types with IDs, names, and image URLs
+  - `net-game-events` — Ordered `GTA_EVENT_IDS` enum entries with sequential IDs
+  - `ped-models` — All pedestrian models organised by category with prop/component counts and images
+  - `pickup-hashes` — All `ePickupHashes` enum entries with numeric hash values
+  - `weapon-models` — All weapons grouped by type with hash keys, model hash keys, DLC, description, components, and tints
+  - `zones` — All 1300+ map zones with zone name ID, zone name, and description
+
+- **Game References API endpoints** (12 endpoints under `/api/game-references`)
+  - `GET /api/game-references/blips` — Blip icons + optional color table; supports `?search=`
+  - `GET /api/game-references/checkpoints` — Checkpoint types; supports `?section=standard|type-44-46`
+  - `GET /api/game-references/data-files` — Data file types; supports `?search=`
+  - `GET /api/game-references/game-events` — Game events; supports `?search=`
+  - `GET /api/game-references/gamer-tags` — Gamer tag components; supports `?search=`
+  - `GET /api/game-references/hud-colors` — HUD colors; supports `?search=`
+  - `GET /api/game-references/markers` — World markers; supports `?search=`
+  - `GET /api/game-references/net-game-events` — Net game events; supports `?search=`
+  - `GET /api/game-references/ped-models` — Ped models; supports `?search=` and `?category=`
+  - `GET /api/game-references/pickup-hashes` — Pickup hashes; supports `?search=`
+  - `GET /api/game-references/weapon-models` — Weapon models; supports `?search=` and `?group=`
+  - `GET /api/game-references/zones` — Map zones; supports `?search=`
+  - All endpoints support `?limit=` and `?offset=` for pagination
+  - All responses follow the standard `{ success, count, data, metadata }` envelope
+
+- **Data source caching** — All game reference data cached in-memory for 1 hour (matching native/artifact TTL)
+- **Markdown and HTML parsers** — Custom parsers for each data format (HTML divs, C enums, markdown tables, inline HTML tables) without external dependencies
+
+---
+
+## [0.2.1] - 2026-02-13
+
+### Added
+- **JSON Validator service** - New validation engine with 3 modes
+  - `generic` — JSON syntax validation with formatted output
+  - `txadmin-embed` — Discord embed JSON validation for txAdmin status embeds
+    - Validates all Discord embed properties (title, description, fields, image, thumbnail, author)
+    - Enforces Discord character limits (title: 256, description: 4096, fields: 25, field name: 256, field value: 1024)
+    - Detects unknown/unsupported embed properties
+    - Warns when `color` or `footer` are set (overridden by txAdmin at runtime)
+    - Validates URLs and txAdmin placeholder syntax
+  - `txadmin-embed-config` — txAdmin embed config validation
+    - Validates required fields (`onlineString`, `offlineString`, `onlineColor`, `offlineColor`)
+    - Hex color format validation (#RGB / #RRGGBB)
+    - Button array validation (max 5 buttons, required label/url)
+    - Emoji field validation
+  - User-friendly JSON parse error messages with line/column numbers
+  - Severity levels: error, warning, info
+
+- **Validator API endpoints** (2 endpoints)
+  - `POST /api/validator/validate` — Validate JSON with type-specific schema checks
+  - `GET /api/validator/info` — Get available validation types, txAdmin placeholders, and Discord limits
+
+- **Artifact metadata enrichment** — Real commit dates and file sizes
+  - Fetches actual commit dates from GitHub Git Data API per SHA
+  - Fetches real artifact file sizes via HEAD requests to the CDN
+  - Concurrent enrichment with semaphore (10 parallel requests)
+  - Results cached for 24 hours (commit dates and file sizes never change)
+  - Falls back to estimated values on failure
+
+### Fixed
+- **GitHub API 401 handling** — Automatic retry without authentication
+  - When `GITHUB_TOKEN` is invalid/expired, requests now retry unauthenticated
+  - Prevents complete API failure due to bad credentials
+  - Public repos (citizenfx/fivem) work fine without authentication (60 req/hr rate limit)
+
+- **Artifact dates showing "less than a minute ago"** — All artifacts previously used `time.Now()`
+  - Now fetches real commit dates from GitHub for each artifact
+  - Dates accurately reflect when each version was actually released
+
+- **Artifact sizes all showing 850.0 MB** — Hardcoded estimate for all Windows artifacts
+  - Now fetches real file sizes via HEAD requests to the artifact CDN
+  - Each artifact displays its actual download size
+
+### Changed
+- **Thread-safe cache** — Added `sync.RWMutex` to cache operations
+  - `getCache()` and `setCache()` are now safe for concurrent access
+  - Cache entries now support per-key TTL via `ttl` field on `cacheEntry`
+  - Required for concurrent artifact enrichment
+
+- Updated version to `0.2.1`, build time to `2026-02-13`
+
+---
+
+## [0.2.0] - 2026-01-25
+
+### Added
+- **Full version string for hosting panels** - Added `FullVersion` field to artifact entries
+  - Format: `{version}-{hash}` (e.g., `24769-315823736cfbc085104ca0d32779311cd2f1a5a8`)
+  - Compatible with Pterodactyl, Pelican, and similar hosting panel egg configurations
+
+- **Artifact statistics in API response** - Added `stats` object to metadata
+  - Includes counts for: `total`, `recommended`, `latest`, `active`, `deprecated`, `eol`
+  - Calculated from filtered results before pagination
+  - Enables frontend to show accurate totals regardless of current page
+
+### Fixed
+- **Pagination total count** - Fixed incorrect total count in pagination metadata
+  - Previously returned count of paginated results instead of total filtered results
+  - Created `ArtifactsResult` struct to properly track total count after filtering but before pagination
+  - `hasMore` now correctly indicates if more pages are available
+
+- **Latest vs Recommended logic** - Fixed support status assignment per CFX EOL policy
+  - **Latest** = Single newest version (for testing/bleeding edge)
+  - **Recommended** = Next 3 versions after Latest (stable for production)
+  - Support status now dynamically assigned based on version position, not hardcoded thresholds
+  - See https://aka.cfx.re/eol for CFX official policy
+
+- **EOL filter default** - Changed `includeEol` default from `true` to `false`
+  - EOL artifacts are now excluded by default for safety
+  - Users must explicitly opt-in to see end-of-life versions
+
+### Changed
+- Updated all artifact handlers to use new `ArtifactsResult` return type
+- Refactored `generateFullVersion()` helper to accept hash parameter
+- Added `ArtifactStats` struct and `calculateStats()` helper function
+- Refactored `ProcessGitHubTags` to dynamically assign Latest/Recommended based on sorted position
+- Simplified `determineSupportStatus()` to only handle Active/Deprecated/EOL thresholds
 
 ---
 

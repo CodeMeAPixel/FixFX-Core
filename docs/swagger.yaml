@@ -1,4 +1,29 @@
 basePath: /api
+definitions:
+  handlers.Contributor:
+    properties:
+      avatar_url:
+        type: string
+      contributions:
+        type: integer
+      html_url:
+        type: string
+      id:
+        type: integer
+      login:
+        type: string
+      type:
+        type: string
+    type: object
+  handlers.ValidateRequest:
+    properties:
+      json:
+        example: '{"key":"value"}'
+        type: string
+      type:
+        example: generic
+        type: string
+    type: object
 host: localhost:3001
 info:
   contact:
@@ -6,7 +31,7 @@ info:
     url: https://fixfx.wiki/discord
   description: Backend API for FixFX documentation and tools
   title: FixFX API
-  version: 1.0.0
+  version: 0.1.0
 paths:
   /artifacts/changes:
     get:
@@ -158,17 +183,586 @@ paths:
       summary: Get artifact by version
       tags:
       - Artifacts
-  /health:
+  /contributors:
     get:
-      description: Check if the API is running
+      description: Fetch merged contributors from the FixFX and FixFX-Core GitHub
+        repositories, sorted by total contributions
+      parameters:
+      - description: Maximum number of contributors to return (0 = all)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
+            items:
+              $ref: '#/definitions/handlers.Contributor'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get contributors
+      tags:
+      - Contributors
+  /contributors/stats:
+    get:
+      description: Return aggregate statistics about contributors across the FixFX
+        and FixFX-Core repositories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get contributor statistics
+      tags:
+      - Contributors
+  /game-references/blips:
+    get:
+      description: Fetch all minimap blip sprites and the blip colour palette with
+        optional search and pagination
+      parameters:
+      - description: Filter by blip name
+        in: query
+        name: search
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get map blips
+      tags:
+      - Game References
+  /game-references/checkpoints:
+    get:
+      description: Fetch all CREATE_CHECKPOINT type IDs with labels, optionally filtered
+        by section
+      parameters:
+      - description: Filter by checkpoint ID or label
+        in: query
+        name: search
+        type: string
+      - description: Filter by section (standard/type-44-46)
+        in: query
+        name: section
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get checkpoint types
+      tags:
+      - Game References
+  /game-references/data-files:
+    get:
+      description: Fetch all data_file keys used in resource manifests with file type,
+        root element, and mounter details
+      parameters:
+      - description: Filter by key, file type, or mounter
+        in: query
+        name: search
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get resource manifest data file types
+      tags:
+      - Game References
+  /game-references/game-events:
+    get:
+      description: Fetch all client-side game events available for resource scripting
+        with descriptions
+      parameters:
+      - description: Filter by event name or description
+        in: query
+        name: search
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get client-side game events
+      tags:
+      - Game References
+  /game-references/gamer-tags:
+    get:
+      description: Fetch all head display component IDs for SET_MULTIPLAYER_HANGER_COLOUR
+        and related natives
+      parameters:
+      - description: Filter by component name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get gamer tag components
+      tags:
+      - Game References
+  /game-references/hud-colors:
+    get:
+      description: Fetch all HUD colour indices with RGBA values and hex codes for
+        use with HUD_COLOUR_* constants
+      parameters:
+      - description: Filter by color name or hex value
+        in: query
+        name: search
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get HUD colors
+      tags:
+      - Game References
+  /game-references/markers:
+    get:
+      description: Fetch all DRAW_MARKER type IDs with name labels
+      parameters:
+      - description: Filter by marker name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get DRAW_MARKER types
+      tags:
+      - Game References
+  /game-references/net-game-events:
+    get:
+      description: Fetch all GTA_EVENT_IDS enum entries with sequential IDs for network
+        event handling
+      parameters:
+      - description: Filter by event name
+        in: query
+        name: search
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get net game events
+      tags:
+      - Game References
+  /game-references/ped-models:
+    get:
+      description: Fetch all pedestrian model names grouped by category, suitable
+        for use with REQUEST_MODEL and GET_HASH_KEY
+      parameters:
+      - description: Filter by model name or category
+        in: query
+        name: search
+        type: string
+      - description: Filter by category name
+        in: query
+        name: category
+        type: string
+      - default: 50
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get pedestrian models
+      tags:
+      - Game References
+  /game-references/pickup-hashes:
+    get:
+      description: Fetch all ePickupHashes enum entries with numeric hash values for
+        use with CREATE_PICKUP_ROTATE and related natives
+      parameters:
+      - description: Filter by pickup name or hash
+        in: query
+        name: search
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get pickup hashes
+      tags:
+      - Game References
+  /game-references/vehicle-colours:
+    get:
+      description: Fetch all vehicle paint colour indices grouped by type (metallic,
+        matte, metals, unnamed) for use with SET_VEHICLE_COLOURS and related natives
+      parameters:
+      - description: Filter by colour name or type
+        in: query
+        name: search
+        type: string
+      - description: Filter by colour type (metallic/matte/metals/unnamed)
+        in: query
+        name: type
+        type: string
+      - default: 200
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get vehicle colours
+      tags:
+      - Game References
+  /game-references/vehicle-flags:
+    get:
+      description: Fetch all vehicle flag definitions with descriptions and the build
+        version they were introduced in
+      parameters:
+      - description: Filter by flag name or description
+        in: query
+        name: search
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get vehicle flags
+      tags:
+      - Game References
+  /game-references/vehicle-models:
+    get:
+      description: Fetch all GTA V / FiveM vehicle model names and hashes grouped
+        by category, suitable for use with REQUEST_MODEL and GET_HASH_KEY
+      parameters:
+      - description: Filter by display name, model name, or category
+        in: query
+        name: search
+        type: string
+      - description: Filter by vehicle category
+        in: query
+        name: category
+        type: string
+      - default: 50
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get vehicle models
+      tags:
+      - Game References
+  /game-references/weapon-models:
+    get:
+      description: Fetch all weapon model names grouped by type with hash keys, DLC
+        info, components, and tints
+      parameters:
+      - description: Filter by weapon name, hash, or group
+        in: query
+        name: search
+        type: string
+      - description: Filter by weapon group
+        in: query
+        name: group
+        type: string
+      - default: 50
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get weapon models
+      tags:
+      - Game References
+  /game-references/zones:
+    get:
+      description: Fetch all 1300+ map zone name IDs with descriptions for area detection
+        scripting
+      parameters:
+      - description: Filter by zone name, ID, or description
+        in: query
+        name: search
+        type: string
+      - default: 100
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Pagination offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get map zones
+      tags:
+      - Game References
+  /health:
+    get:
+      description: Check if the API is running and get version information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
             type: object
       summary: Health Check
       tags:
@@ -372,6 +966,49 @@ paths:
       summary: Read source file
       tags:
       - Source
+  /validator/info:
+    get:
+      description: Get available validation types, txAdmin placeholders, and schema
+        info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get validator information
+      tags:
+      - Validator
+  /validator/validate:
+    post:
+      consumes:
+      - application/json
+      description: Validate JSON with optional txAdmin embed/config schema validation
+      parameters:
+      - description: JSON to validate
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ValidateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Validate JSON
+      tags:
+      - Validator
 schemes:
 - http
 - https

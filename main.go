@@ -15,8 +15,8 @@ import (
 
 // Version information
 const (
-	Version   = "0.1.0"
-	BuildTime = "2026-01-25"
+	Version   = "0.2.1"
+	BuildTime = "2026-02-13"
 )
 
 // @title FixFX API
@@ -60,8 +60,10 @@ func main() {
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	handlers.InitArtifactsHandler(githubToken)
 	handlers.InitNativesHandler()
+	handlers.InitGameReferencesHandler()
 	handlers.InitSourceHandler(".", nil) // Use current directory as base path
 	handlers.InitContributorsHandler(githubToken)
+	handlers.InitValidatorHandler()
 
 	// Health check
 	app.Get("/health", healthCheck)
@@ -82,9 +84,11 @@ func main() {
 	// Register route groups
 	routes.RegisterArtifactsRoutes(api)
 	routes.RegisterNativesRoutes(api)
+	routes.RegisterGameReferencesRoutes(api)
 	routes.RegisterSourceRoutes(api)
 	routes.RegisterSearchRoutes(api)
 	routes.RegisterContributorsRoutes(api)
+	routes.RegisterValidatorRoutes(api)
 
 	// Start server
 	port := os.Getenv("PORT")

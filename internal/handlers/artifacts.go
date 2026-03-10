@@ -37,7 +37,7 @@ func GetArtifacts(c *fiber.Ctx) error {
 		Status:     services.SupportStatus(c.Query("status", "")),
 		SortBy:     c.Query("sortBy", "version"),
 		SortOrder:  c.Query("sortOrder", "desc"),
-		IncludeEOL: c.QueryBool("includeEol", true),
+		IncludeEOL: c.QueryBool("includeEol", false),
 	}
 
 	// Parse limit and offset
@@ -91,6 +91,14 @@ func GetArtifacts(c *fiber.Ctx) error {
 			"hasMore":         offset+len(artifacts) < totalFiltered,
 			"platforms":       platforms,
 			"supportStatuses": statuses,
+			"stats": fiber.Map{
+				"total":       result.Stats.Total,
+				"recommended": result.Stats.Recommended,
+				"latest":      result.Stats.Latest,
+				"active":      result.Stats.Active,
+				"deprecated":  result.Stats.Deprecated,
+				"eol":         result.Stats.EOL,
+			},
 			"query": fiber.Map{
 				"platform":   query.Platform,
 				"version":    query.Version,
