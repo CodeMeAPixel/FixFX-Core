@@ -10,6 +10,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Minor versions** (0.x.0): New features, non-breaking changes
 - **Major versions** (x.0.0): Breaking API changes
 
+## [0.2.3] - 2026-03-10
+
+### Added
+- **Vehicle References** — 3 new game reference types under `/api/game-references`
+  - `vehicle-models` — All GTA V / FiveM vehicle model names, model hashes, display names, and category groupings, suitable for use with `REQUEST_MODEL` and `GET_HASH_KEY`
+  - `vehicle-colours` — All vehicle paint colour indices with names and types (metallic, matte, metals, unnamed) for use with `SET_VEHICLE_COLOURS` and related natives
+  - `vehicle-flags` — All vehicle flag definitions with flag number, name, description, and the build version they were introduced in
+- **Vehicle Reference API endpoints** (3 endpoints added to `/api/game-references`)
+  - `GET /api/game-references/vehicle-models` — Vehicle models; supports `?search=` and `?category=`
+  - `GET /api/game-references/vehicle-colours` — Vehicle paint colours; supports `?search=` and `?type=`
+  - `GET /api/game-references/vehicle-flags` — Vehicle flags; supports `?search=`
+  - All endpoints support `?limit=` and `?offset=` for pagination
+
+- **Swagger documentation** — Added `@Summary`, `@Tags`, `@Param`, `@Success`, and `@Failure` annotations to all handlers that previously lacked them
+  - All 15 game reference handlers now fully documented
+  - Both contributor handlers (`GetContributors`, `GetContributor`) now documented
+  - Validator handlers (`ValidateJSON`, `GetValidatorInfo`) now documented
+
+### Fixed
+- **`NativesMetadata` missing JSON tags** — All struct fields were PascalCase without `json:""` tags, causing every metadata field to deserialize as `undefined` on the frontend; all fields now use correct camelCase JSON tags
+- **`IncludeCfx` default override bug** — A conditional block unconditionally forced `IncludeCfx = true` whenever an environment filter was active, making it impossible to exclude CFX natives; the block has been removed
+- **`environmentStats` built from wrong set** — Stats were computed after game-filter but before environment-filter, producing inflated counts; stats now reflect the fully-filtered native set
+- **Swagger `ValidateRequest` anonymous struct** — `ValidateJSON` used an anonymous struct for its request body, which `swag` cannot document; extracted to a named `ValidateRequest` type so `make swagger` succeeds without errors
+
+---
+
 ## [0.2.2] - 2026-03-04
 
 ### Added
